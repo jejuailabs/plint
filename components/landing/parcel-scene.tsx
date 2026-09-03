@@ -45,7 +45,7 @@ function ContextBuildings({ context }: { context?: ContextBuilding[] }) {
       {buildings.map(([x, y, z, width, height, depth], index) => (
         <mesh key={index} position={[x, y, z]} castShadow receiveShadow>
           <boxGeometry args={[width, height, depth]} />
-          <meshStandardMaterial color="#182334" roughness={0.78} metalness={0.16} />
+          <meshStandardMaterial color="#365172" emissive="#102a43" emissiveIntensity={0.35} roughness={0.72} metalness={0.1} />
         </mesh>
       ))}
     </group>
@@ -57,19 +57,19 @@ function UrbanContext() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[38, 38]} />
-        <meshStandardMaterial color="#071520" roughness={0.9} metalness={0.12} />
+        <meshStandardMaterial color="#0c2134" roughness={0.88} metalness={0.1} />
       </mesh>
       <mesh position={[0, 0.035, 0]} receiveShadow>
         <boxGeometry args={[34, 0.05, 1.8]} />
-        <meshStandardMaterial color="#152333" roughness={0.96} />
+        <meshStandardMaterial color="#2a425a" roughness={0.92} />
       </mesh>
       <mesh position={[-7.2, 0.04, 0]} receiveShadow>
         <boxGeometry args={[1.1, 0.06, 34]} />
-        <meshStandardMaterial color="#132231" roughness={0.96} />
+        <meshStandardMaterial color="#263d55" roughness={0.92} />
       </mesh>
       <mesh position={[6.4, 0.04, 0]} receiveShadow>
         <boxGeometry args={[1.1, 0.06, 34]} />
-        <meshStandardMaterial color="#132231" roughness={0.96} />
+        <meshStandardMaterial color="#263d55" roughness={0.92} />
       </mesh>
       <lineSegments position={[0, 0.09, 0]}>
         <edgesGeometry args={[new THREE.BoxGeometry(5.6, 0.035, 5.05)]} />
@@ -113,12 +113,13 @@ function DevelopmentMass({ scenario }: { scenario?: DevelopmentScenario }) {
 function Scene({ scenario, context }: { scenario?: DevelopmentScenario; context?: ContextBuilding[] }) {
   return (
     <>
-      <color attach="background" args={['#07101c']} />
-      <fog attach="fog" args={['#07101c', 10, 23]} />
-      <ambientLight intensity={0.62} />
-      <directionalLight position={[5, 9, 4]} intensity={2.6} color="#d8fbff" castShadow />
-      <pointLight position={[-5, 4, -4]} intensity={22} distance={12} color="#22d3ee" />
-      <pointLight position={[4, 3, 5]} intensity={10} distance={10} color="#bef264" />
+      <color attach="background" args={['#081a2d']} />
+      <fog attach="fog" args={['#081a2d', 24, 54]} />
+      <ambientLight intensity={1.05} />
+      <hemisphereLight args={['#bdeeff', '#07121f', 1.1]} />
+      <directionalLight position={[5, 11, 5]} intensity={3.6} color="#d8fbff" castShadow />
+      <pointLight position={[-6, 6, -5]} intensity={34} distance={24} color="#22d3ee" />
+      <pointLight position={[5, 5, 6]} intensity={20} distance={22} color="#bef264" />
       <UrbanContext />
       <DevelopmentMass scenario={scenario} />
       <ContextBuildings context={context} />
@@ -134,10 +135,10 @@ export type ParcelSceneProps = { address: string; scenario?: DevelopmentScenario
 export function ParcelScene({ address, scenario, context }: ParcelSceneProps) {
   return (
     <div className="absolute inset-0 overflow-hidden rounded-[inherit]" aria-label={`${address} 3D 개발 시나리오`}>
-      <Canvas shadows camera={{ position: [14, 13, 16], fov: 40 }} dpr={[1, 1.6]}>
+      <Canvas shadows camera={{ position: [12.5, 11.5, 14.5], fov: 39 }} dpr={[1, 1.6]}>
         <Suspense fallback={null}><Scene scenario={scenario} context={context} /></Suspense>
       </Canvas>
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,transparent_28%,rgba(3,7,18,.46)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,transparent_38%,rgba(3,7,18,.2)_100%)]" />
       <div className="pointer-events-none absolute bottom-5 right-5 rounded-lg border border-cyan-300/15 bg-slate-950/70 px-3 py-2 font-mono text-[9px] uppercase tracking-[.18em] text-cyan-100/80 backdrop-blur">
         Urban context · mock map
       </div>
