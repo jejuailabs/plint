@@ -1,6 +1,6 @@
 'use client';
 
-import { Environment, Float, Grid, OrbitControls } from '@react-three/drei';
+import { Environment, Grid, OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Suspense, useMemo } from 'react';
 import * as THREE from 'three';
@@ -52,19 +52,45 @@ function ContextBuildings({ context }: { context?: ContextBuilding[] }) {
   );
 }
 
+function UrbanContext() {
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[38, 38]} />
+        <meshStandardMaterial color="#071520" roughness={0.9} metalness={0.12} />
+      </mesh>
+      <mesh position={[0, 0.035, 0]} receiveShadow>
+        <boxGeometry args={[34, 0.05, 1.8]} />
+        <meshStandardMaterial color="#152333" roughness={0.96} />
+      </mesh>
+      <mesh position={[-7.2, 0.04, 0]} receiveShadow>
+        <boxGeometry args={[1.1, 0.06, 34]} />
+        <meshStandardMaterial color="#132231" roughness={0.96} />
+      </mesh>
+      <mesh position={[6.4, 0.04, 0]} receiveShadow>
+        <boxGeometry args={[1.1, 0.06, 34]} />
+        <meshStandardMaterial color="#132231" roughness={0.96} />
+      </mesh>
+      <lineSegments position={[0, 0.09, 0]}>
+        <edgesGeometry args={[new THREE.BoxGeometry(5.6, 0.035, 5.05)]} />
+        <lineBasicMaterial color="#bef264" transparent opacity={0.82} />
+      </lineSegments>
+    </group>
+  );
+}
+
 function DevelopmentMass({ scenario }: { scenario?: DevelopmentScenario }) {
   const floors = scenario?.floors ?? [
     { floor: 1, footprintScale: 1, heightM: 3.3 },
     { floor: 2, footprintScale: 0.86, heightM: 3.3 },
     { floor: 3, footprintScale: 0.7, heightM: 3.3 },
   ];
-  const baseWidth = 3.5 * Math.sqrt((scenario?.buildingCoverageRatio ?? 54) / 54);
+  const baseWidth = 2.85 * Math.sqrt((scenario?.buildingCoverageRatio ?? 54) / 54);
 
   return (
-    <Float speed={0.55} rotationIntensity={0.04} floatIntensity={0.08}>
       <group position={[0, 0.24, 0]} rotation={[0, -0.32, 0]}>
         <mesh position={[0, 0.08, 0]} receiveShadow>
-          <boxGeometry args={[4.55, 0.12, 4.15]} />
+          <boxGeometry args={[5.45, 0.12, 4.95]} />
           <meshStandardMaterial color="#2dd4bf" transparent opacity={0.22} roughness={0.35} />
         </mesh>
         {floors.map((floor, index) => {
@@ -77,11 +103,10 @@ function DevelopmentMass({ scenario }: { scenario?: DevelopmentScenario }) {
           );
         })}
         <lineSegments position={[0, 0.01, 0]}>
-          <edgesGeometry args={[new THREE.BoxGeometry(4.65, 0.08, 4.25)]} />
+          <edgesGeometry args={[new THREE.BoxGeometry(5.55, 0.08, 5.05)]} />
           <lineBasicMaterial color="#bef264" transparent opacity={0.92} />
         </lineSegments>
       </group>
-    </Float>
   );
 }
 
@@ -94,11 +119,12 @@ function Scene({ scenario, context }: { scenario?: DevelopmentScenario; context?
       <directionalLight position={[5, 9, 4]} intensity={2.6} color="#d8fbff" castShadow />
       <pointLight position={[-5, 4, -4]} intensity={22} distance={12} color="#22d3ee" />
       <pointLight position={[4, 3, 5]} intensity={10} distance={10} color="#bef264" />
+      <UrbanContext />
       <DevelopmentMass scenario={scenario} />
       <ContextBuildings context={context} />
-      <Grid position={[0, 0, 0]} args={[24, 24]} cellSize={0.6} cellThickness={0.45} cellColor="#164e63" sectionSize={3} sectionThickness={0.75} sectionColor="#0e7490" fadeDistance={18} fadeStrength={1.5} infiniteGrid />
+      <Grid position={[0, 0.015, 0]} args={[38, 38]} cellSize={0.75} cellThickness={0.34} cellColor="#164e63" sectionSize={3} sectionThickness={0.64} sectionColor="#0e7490" fadeDistance={29} fadeStrength={1.3} infiniteGrid />
       <Environment preset="city" />
-      <OrbitControls enablePan={false} minDistance={8} maxDistance={15} minPolarAngle={0.72} maxPolarAngle={1.35} autoRotate autoRotateSpeed={0.32} />
+      <OrbitControls target={[0, 0.5, 0]} enablePan={false} minDistance={13} maxDistance={25} minPolarAngle={0.72} maxPolarAngle={1.22} autoRotate autoRotateSpeed={0.18} />
     </>
   );
 }
@@ -108,10 +134,13 @@ export type ParcelSceneProps = { address: string; scenario?: DevelopmentScenario
 export function ParcelScene({ address, scenario, context }: ParcelSceneProps) {
   return (
     <div className="absolute inset-0 overflow-hidden rounded-[inherit]" aria-label={`${address} 3D 개발 시나리오`}>
-      <Canvas shadows camera={{ position: [8.2, 6.8, 9.4], fov: 39 }} dpr={[1, 1.6]}>
+      <Canvas shadows camera={{ position: [14, 13, 16], fov: 40 }} dpr={[1, 1.6]}>
         <Suspense fallback={null}><Scene scenario={scenario} context={context} /></Suspense>
       </Canvas>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,transparent_28%,rgba(3,7,18,.46)_100%)]" />
+      <div className="pointer-events-none absolute bottom-5 right-5 rounded-lg border border-cyan-300/15 bg-slate-950/70 px-3 py-2 font-mono text-[9px] uppercase tracking-[.18em] text-cyan-100/80 backdrop-blur">
+        Urban context · mock map
+      </div>
     </div>
   );
 }

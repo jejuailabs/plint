@@ -7,7 +7,7 @@ const themeBootstrap = `(() => {
     const stored = localStorage.getItem('plint-theme');
     const theme = stored === 'light' || stored === 'dark'
       ? stored
-      : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      : 'dark';
     document.documentElement.dataset.theme = theme;
   } catch { document.documentElement.dataset.theme = 'dark'; }
 })();`;

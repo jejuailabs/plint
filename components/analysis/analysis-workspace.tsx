@@ -88,7 +88,7 @@ export function AnalysisWorkspace() {
 
   return (
     <main className="site-shell min-h-screen text-white">
-      <header className="sticky top-0 z-30 border-b border-white/8 bg-[#07101c]/90 backdrop-blur-xl">
+      <header className="analysis-header sticky top-0 z-30 border-b border-white/8 bg-[#07101c]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-4 px-4 sm:px-6">
           <Link href="/" className="grid size-9 place-items-center rounded-xl border border-white/10 bg-white/5" aria-label="홈으로 돌아가기">
             <ArrowLeft className="size-4 text-slate-300" />
@@ -160,7 +160,7 @@ export function AnalysisWorkspace() {
             </Card>
           </aside>
 
-          <section className="min-h-[620px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/30">
+          <section className="analysis-scene-frame min-h-[620px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/30">
             <div className="relative h-[520px] xl:h-[calc(100vh-205px)] xl:min-h-[620px]">
               <LazyParcelScene address={address} scenario={scenario} context={result.data.context} />
               <div className="pointer-events-none absolute left-5 top-5">
