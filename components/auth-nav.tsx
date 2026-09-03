@@ -1,6 +1,6 @@
 'use client';
 
-import { Layers3, LayoutDashboard, LogOut } from 'lucide-react';
+import { Layers3, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
@@ -51,6 +51,11 @@ export function AuthNav() {
 
   return (
     <div className="flex items-center gap-2">
+      {user.app_metadata?.role === 'admin' && (
+        <Link href="/admin" className="grid size-9 place-items-center rounded-lg border border-lime-300/25 bg-lime-300/10 text-lime-200 transition hover:bg-lime-300/15" aria-label="관리자 콘솔">
+          <ShieldCheck className="size-4" />
+        </Link>
+      )}
       <Link href="/dashboard" className="inline-flex h-9 items-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-300/15">
         <LayoutDashboard className="size-3.5" />
         워크스페이스
