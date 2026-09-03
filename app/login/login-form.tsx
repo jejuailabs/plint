@@ -35,7 +35,7 @@ export function LoginForm() {
         type="button"
         onClick={signInWithGoogle}
         disabled={isPending}
-        className="h-12 w-full rounded-xl bg-white text-slate-950 hover:bg-slate-100"
+        className="auth-google-button h-12 w-full rounded-xl bg-white text-slate-950 hover:bg-slate-100"
       >
         {isPending ? <LoaderCircle className="mr-2 size-4 animate-spin" /> : <GoogleMark />}
         Google로 계속하기
