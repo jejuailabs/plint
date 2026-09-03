@@ -1,7 +1,7 @@
 begin;
 select plan(10);
 
-select ok((select relrowsecurity from pg_class where oid = 'public.profiles'::regclass), 'profiles has RLS');
+select ok((select relrowsecurity from pg_class where oid = 'public.users'::regclass), 'users has RLS');
 select ok((select relrowsecurity from pg_class where oid = 'public.sites'::regclass), 'sites has RLS');
 select ok((select relrowsecurity from pg_class where oid = 'public.analyses'::regclass), 'analyses has RLS');
 select ok((select relrowsecurity from pg_class where oid = 'public.derived_facts'::regclass), 'derived facts has RLS');
@@ -21,7 +21,7 @@ insert into public.sites (id, user_id, jibun_address) values
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{}}', true);
 
-select results_eq('select count(*) from public.profiles', 'values (1::bigint)', 'user sees only own profile');
+select results_eq('select count(*) from public.users', 'values (1::bigint)', 'user sees only own profile');
 select results_eq('select count(*) from public.sites', 'values (1::bigint)', 'user sees only own site');
 
 select throws_ok(

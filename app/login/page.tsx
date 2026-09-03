@@ -2,10 +2,12 @@ import { ArrowLeft, Layers3 } from 'lucide-react';
 import Link from 'next/link';
 
 import { LoginForm } from '@/app/login/login-form';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function LoginPage() {
   return (
     <main className="site-shell grid min-h-screen place-items-center px-5 py-12 text-white">
+      <div className="absolute right-5 top-5 sm:right-8 sm:top-8"><ThemeToggle /></div>
       <section className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/60 p-7 shadow-[0_40px_120px_rgba(0,0,0,.45)] backdrop-blur-xl sm:p-9">
         <div className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full bg-cyan-400/10 blur-3xl" />
         <Link href="/" className="relative inline-flex items-center gap-2 text-xs text-slate-400 transition hover:text-white">

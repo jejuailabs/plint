@@ -2,27 +2,34 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 
-function safeNextPath(value: string | null) {
-  return value?.startsWith('/') && !value.startsWith('//') ? value : '/analysis';
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
-  const next = safeNextPath(url.searchParams.get('next'));
-  let exchangeSucceeded = false;
+  let destination: '/dashboard' | '/onboarding' | null = null;
 
   if (code) {
     try {
       const supabase = await createClient();
       const { error } = await supabase.auth.exchangeCodeForSession(code);
-      exchangeSucceeded = !error;
+      if (error) throw error;
+
+      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+      if (claimsError || !claimsData?.claims?.sub) throw claimsError ?? new Error('Missing authenticated user');
+
+      const { data: userRecord, error: userError } = await supabase
+        .from('users')
+        .select('segment')
+        .eq('id', claimsData.claims.sub)
+        .maybeSingle();
+      if (userError) throw userError;
+
+      destination = userRecord?.segment ? '/dashboard' : '/onboarding';
     } catch (error) {
       console.error('OAuth callback failed', error);
     }
   }
 
-  if (exchangeSucceeded) redirect(new URL(next, url.origin).toString());
+  if (destination) redirect(new URL(destination, url.origin).toString());
 
   redirect(new URL('/login?error=oauth_callback', url.origin).toString());
 }

@@ -10,7 +10,7 @@
 - 수익형/균형형/품질형 3개 개발 시나리오와 3D 선택 연동
 - `Evidence`, `Fact<T>`, confidence, 기준일, 추정/누락 상태를 포함한 데이터 계보
 - 11개 공공데이터 커넥터 매니페스트와 공개 카탈로그 API
-- Google OAuth 로그인 UI와 Supabase PKCE 콜백
+- 공개 랜딩을 유지하는 Google OAuth 로그인, 최초 사용자 온보딩, 로그인 사용자 대시보드 진입
 - 초기 Supabase/PostGIS 마이그레이션, 명시적 grants/RLS, pgTAP 정책 테스트
 - 타입 검사, 단위 테스트, 린트, 프로덕션 빌드 명령
 
@@ -39,7 +39,7 @@
 
 ### P1 — 로그인 사용자 프로젝트 저장
 
-1. 환경변수와 Google provider를 설정하고 OAuth callback을 실제 프로젝트에서 검증한다.
+1. 환경변수와 Google provider를 설정하고 OAuth callback을 실제 프로젝트에서 검증한다. 랜딩(`/`)은 공개 상태를 유지한다.
 2. `/api/sites`, `/api/analysis`, `/api/analyses`를 구현한다.
 3. 모든 route에서 `getClaims()` 기반 사용자 확인과 명시적 소유권 검사를 추가한다.
 4. 분석 상태를 pending → phase1~4 → completed/failed로 전이한다.

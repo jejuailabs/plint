@@ -9,6 +9,8 @@ Supabase Auth의 Google Provider를 사용한다. 자체 OAuth 클라이언트 �
 - `/login` — "Google로 계속하기" 버튼 하나만 있는 미니멀한 화면 (로고 + 버튼 + 이용약관/개인정보처리방침 링크)
 - 로그인은 구글만 지원. 이메일/비밀번호 로그인은 이번 스펙에서 제외.
 - 로그인 성공 시 최초 방문자는 `/onboarding`(간단한 소속 구분: 건축주/건축사/부동산플랫폼 선택, `users.segment`에 저장)으로, 기존 사용자는 `/dashboard`로 이동.
+- `/` 랜딩페이지는 항상 공개 상태로 유지하며, 로그인 여부에 따라 자동 리다이렉트하지 않는다. 로그인은 네비게이션의 `Google 로그인` 버튼에서만 시작한다.
+- 운영 배포 전 Supabase Dashboard의 Google Provider와 Google Cloud OAuth 동의 화면을 설정하고, Redirect URL로 `https://<supabase-project-ref>.supabase.co/auth/v1/callback` 및 서비스의 `/auth/callback`을 등록한다.
 
 ### 1.3 세션/요청 프록시
 - 현행 `@supabase/ssr`의 브라우저/서버 클라이언트를 분리하고 요청 프록시에서 `getClaims()`로 토큰을 갱신한다.

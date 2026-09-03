@@ -8,6 +8,7 @@ import { LazyParcelScene } from '@/components/landing/lazy-parcel-scene';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const signals = [
   { label: '용도지역', value: '제2종 일반주거', tone: 'cyan' },
@@ -44,15 +45,18 @@ export default function Home() {
           <a className="transition hover:text-white" href="#data">데이터</a>
         </div>
 
-        <Link
-          href="/login"
-          className={buttonVariants({
-            variant: 'outline',
-            className: 'h-9 border-white/15 bg-white/5 px-4 text-white hover:bg-white/10 hover:text-white',
-          })}
-        >
-          프로젝트 시작
-        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Link
+            href="/login"
+            className={buttonVariants({
+              variant: 'outline',
+              className: 'h-9 border-white/15 bg-white/5 px-4 text-white hover:bg-white/10 hover:text-white',
+            })}
+          >
+            Google 로그인
+          </Link>
+        </div>
       </nav>
 
       <section id="top" className="relative mx-auto grid min-h-[calc(100vh-80px)] w-full max-w-[1440px] items-center gap-6 px-5 pb-12 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:px-12 lg:pb-16">

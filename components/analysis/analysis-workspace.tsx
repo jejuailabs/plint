@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ThemeToggle } from '@/components/theme-toggle';
 import type { AnalysisPreviewResponse, DevelopmentScenario } from '@/lib/domain/parcel-intelligence';
 
 const fallbackAddress = '서울특별시 성동구 성수동2가 277-17';
@@ -86,7 +87,7 @@ export function AnalysisWorkspace() {
   }
 
   return (
-    <main className="min-h-screen bg-[#07101c] text-white">
+    <main className="site-shell min-h-screen text-white">
       <header className="sticky top-0 z-30 border-b border-white/8 bg-[#07101c]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-4 px-4 sm:px-6">
           <Link href="/" className="grid size-9 place-items-center rounded-xl border border-white/10 bg-white/5" aria-label="홈으로 돌아가기">
@@ -101,6 +102,7 @@ export function AnalysisWorkspace() {
             <Input value={query} onChange={(event) => setQuery(event.target.value)} className="h-9 border-0 bg-transparent text-sm text-white focus-visible:ring-0" aria-label="분석 주소" />
             <Button type="submit" size="sm" className="h-9 bg-cyan-300 px-4 text-slate-950 hover:bg-cyan-200">재분석</Button>
           </form>
+          <ThemeToggle />
           <Button variant="outline" size="icon" className="border-white/10 bg-white/5 text-slate-300" aria-label="결과 내려받기"><Download /></Button>
         </div>
       </header>

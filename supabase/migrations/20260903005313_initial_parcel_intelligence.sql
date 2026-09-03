@@ -4,7 +4,7 @@ create extension if not exists postgis with schema extensions;
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
 
-create table public.profiles (
+create table public.users (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
   display_name text,
@@ -29,7 +29,7 @@ create table public.plans (
 
 create table public.sites (
   id uuid primary key default extensions.gen_random_uuid(),
-  user_id uuid not null references public.profiles(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
   jibun_address text not null,
   road_address text,
   pnu_code text check (pnu_code is null or pnu_code ~ '^[0-9]{19}$'),
@@ -40,7 +40,7 @@ create table public.sites (
 create table public.analyses (
   id uuid primary key default extensions.gen_random_uuid(),
   site_id uuid not null references public.sites(id) on delete cascade,
-  user_id uuid not null references public.profiles(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
   status text not null default 'pending' check (status in ('pending', 'collecting', 'regulations', 'modeling', 'feasibility', 'completed', 'failed')),
   pipeline_version text not null default 'parcel-intelligence-v1',
   result jsonb,
@@ -56,7 +56,7 @@ create table public.analyses (
 create table public.derived_facts (
   id uuid primary key default extensions.gen_random_uuid(),
   analysis_id uuid not null references public.analyses(id) on delete cascade,
-  user_id uuid not null references public.profiles(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
   fact_path text not null,
   value_json jsonb,
   confidence text not null check (confidence in ('verified', 'derived', 'estimated', 'missing')),
@@ -70,7 +70,7 @@ create table public.derived_facts (
 create table public.analysis_artifacts (
   id uuid primary key default extensions.gen_random_uuid(),
   analysis_id uuid not null references public.analyses(id) on delete cascade,
-  user_id uuid not null references public.profiles(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
   kind text not null check (kind in ('pdf', 'xlsx', 'glb', 'skp', 'geojson', 'json', 'thumbnail')),
   storage_path text not null,
   file_size_bytes bigint check (file_size_bytes is null or file_size_bytes >= 0),
@@ -123,7 +123,7 @@ create index artifacts_analysis_idx on public.analysis_artifacts (analysis_id, c
 create index artifacts_user_idx on public.analysis_artifacts (user_id);
 create index raw_snapshots_lookup_idx on private.raw_snapshots (dataset_id, source_key, effective_at desc);
 
-alter table public.profiles enable row level security;
+alter table public.users enable row level security;
 alter table public.plans enable row level security;
 alter table public.sites enable row level security;
 alter table public.analyses enable row level security;
@@ -132,10 +132,10 @@ alter table public.analysis_artifacts enable row level security;
 alter table public.connector_registry enable row level security;
 alter table private.raw_snapshots enable row level security;
 
-revoke all on table public.profiles, public.plans, public.sites, public.analyses,
+revoke all on table public.users, public.plans, public.sites, public.analyses,
   public.derived_facts, public.analysis_artifacts, public.connector_registry from anon, authenticated;
 grant select on table public.plans to anon, authenticated;
-grant select, update on table public.profiles to authenticated;
+grant select, update on table public.users to authenticated;
 grant select, insert, update, delete on table public.sites to authenticated;
 grant select, insert, update, delete on table public.analyses to authenticated;
 grant select on table public.derived_facts, public.analysis_artifacts, public.connector_registry to authenticated;
@@ -146,12 +146,12 @@ to anon, authenticated
 using (is_active = true);
 
 create policy "users read own profile"
-on public.profiles for select
+on public.users for select
 to authenticated
 using ((select auth.uid()) = id or (select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 create policy "users update own profile"
-on public.profiles for update
+on public.users for update
 to authenticated
 using ((select auth.uid()) = id)
 with check ((select auth.uid()) = id);
@@ -223,7 +223,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.profiles (id, email, display_name, avatar_url)
+  insert into public.users (id, email, display_name, avatar_url)
   values (
     new.id,
     coalesce(new.email, ''),
