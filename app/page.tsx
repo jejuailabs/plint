@@ -1,12 +1,12 @@
 'use client';
 
 import { ArrowRight, DatabaseZap, Layers3, ShieldCheck } from 'lucide-react';
-import Link from 'next/link';
 import { SyntheticEvent, useState } from 'react';
 
 import { LazyParcelScene } from '@/components/landing/lazy-parcel-scene';
 import { Badge } from '@/components/ui/badge';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { AuthNav } from '@/components/auth-nav';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -47,15 +47,7 @@ export default function Home() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            href="/login"
-            className={buttonVariants({
-              variant: 'outline',
-              className: 'h-9 border-white/15 bg-white/5 px-4 text-white hover:bg-white/10 hover:text-white',
-            })}
-          >
-            Google 로그인
-          </Link>
+          <AuthNav />
         </div>
       </nav>
 

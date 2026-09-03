@@ -188,6 +188,15 @@ html[data-theme='light'] .auth-google-button {
 }
 html[data-theme='light'] .auth-google-button:hover { background: #f4f9fc !important; }
 
+html[data-theme='light'] .auth-modal {
+  background: rgba(255, 255, 255, .98) !important;
+  border-color: #c9dbe6 !important;
+  box-shadow: 0 28px 80px rgba(38, 76, 97, .24);
+}
+html[data-theme='light'] .auth-modal [data-slot='dialog-title'] { color: #102738; }
+html[data-theme='light'] .auth-modal [data-slot='dialog-description'] { color: #456176; }
+html[data-theme='light'] .auth-modal .text-slate-500 { color: #668095; }
+
 .hero-gradient {
   color: transparent;
   background: linear-gradient(102deg, #d8fbff 4%, #67e8f9 46%, #bef264 104%);
