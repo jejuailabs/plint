@@ -222,19 +222,120 @@ html[data-theme='light'] .analysis-scene-frame {
 }
 
 html[data-theme='light'] .report-paper {
-  background: #f8fcff !important;
+  background: #fff !important;
   border-color: #c8dbe7 !important;
   box-shadow: 0 28px 80px rgba(38, 76, 97, 0.16);
 }
 
-html[data-theme='light'] .report-paper [class*='bg-\\[\\#0'] {
-  background-color: #edf7fb !important;
+html[data-theme='light'] .report-paper > section:not(.report-model-canvas) {
+  background: #fff;
 }
+
 html[data-theme='light'] .report-paper [class*='border-white'] {
   border-color: rgba(20, 72, 102, 0.15);
 }
+
+html[data-theme='light'] .report-cover {
+  background:
+    radial-gradient(
+      circle at 85% 15%,
+      rgba(34, 211, 238, 0.22),
+      transparent 30%
+    ),
+    linear-gradient(135deg, #f9fdff 0%, #edfaff 58%, #eff9ec 100%) !important;
+}
+
+html[data-theme='light'] .report-cover .text-white,
+html[data-theme='light'] .report-cover .text-slate-100,
+html[data-theme='light'] .report-cover .text-slate-200 {
+  color: #102b3d !important;
+}
+
+html[data-theme='light'] .report-cover .text-slate-300 {
+  color: #375b70 !important;
+}
+
+html[data-theme='light'] .report-cover .text-slate-400,
+html[data-theme='light'] .report-cover .text-slate-500 {
+  color: #698295 !important;
+}
+
+html[data-theme='light'] .report-recommendation {
+  background: rgba(246, 255, 237, 0.92) !important;
+  border-color: rgba(101, 163, 13, 0.36) !important;
+  box-shadow: 0 12px 35px rgba(80, 120, 30, 0.1);
+}
+
+html[data-theme='light'] .report-recommendation .text-white {
+  color: #193319 !important;
+}
+
+html[data-theme='light'] .report-recommendation .text-slate-400 {
+  color: #54705b !important;
+}
+
 html[data-theme='light'] .report-paper [class*='bg-black'] {
-  background-color: rgba(238, 247, 251, 0.75);
+  background-color: #f4f9fc;
+}
+
+html[data-theme='light'] .report-paper [class*='bg-white'] {
+  background-color: rgba(245, 250, 253, 0.92);
+}
+
+html[data-theme='light'] .report-model-canvas {
+  background: linear-gradient(145deg, #051521, #0a2132) !important;
+  border-color: rgba(17, 76, 107, 0.28) !important;
+}
+
+html[data-theme='light'] .report-model-canvas .text-white,
+html[data-theme='light'] .report-model-canvas .text-slate-100,
+html[data-theme='light'] .report-model-canvas .text-slate-200 {
+  color: #f5fbff !important;
+}
+
+html[data-theme='light'] .report-model-canvas .text-slate-500 {
+  color: #9fb5c7 !important;
+}
+
+html[data-theme='light'] .report-unlock {
+  background: linear-gradient(125deg, #eff9ff, #fbfff5) !important;
+}
+
+html[data-theme='light'] .report-unlock .text-white {
+  color: #102b3d !important;
+}
+
+html[data-theme='light'] .report-unlock .text-slate-400 {
+  color: #597084 !important;
+}
+
+html[data-theme='dark'] .analysis-readable .text-slate-100,
+html[data-theme='dark'] .analysis-readable .text-slate-200 {
+  color: #f2f7fb;
+}
+
+html[data-theme='dark'] .analysis-readable .text-slate-300 {
+  color: #d2dee8;
+}
+
+html[data-theme='dark'] .analysis-readable .text-slate-400 {
+  color: #b4c4d1;
+}
+
+html[data-theme='dark'] .analysis-readable .text-slate-500 {
+  color: #8fa5b6;
+}
+
+html[data-theme='dark'] .analysis-readable .text-slate-600 {
+  color: #71899c;
+}
+
+html[data-theme='dark'] .analysis-readable [class*='bg-white'] {
+  background-color: rgba(20, 37, 54, 0.78);
+}
+
+html[data-theme='dark'] .analysis-readable [class*='border-white'] {
+  border-color: rgba(177, 205, 224, 0.16);
 }
 
 html[data-theme='light'] .site-shell .hero-gradient {

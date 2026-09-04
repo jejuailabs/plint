@@ -146,7 +146,7 @@ export function ReportPreview() {
 
       <div className="mx-auto max-w-[1480px] px-4 py-6 sm:px-6 sm:py-10">
         <div className="report-paper overflow-hidden rounded-[28px] border border-white/10 bg-[#0a1624] shadow-[0_30px_100px_rgba(0,0,0,.35)]">
-          <section className="relative overflow-hidden border-b border-white/10 px-6 py-8 sm:px-10 lg:px-14 lg:py-12">
+          <section className="report-cover relative overflow-hidden border-b border-white/10 px-6 py-8 sm:px-10 lg:px-14 lg:py-12">
             <div className="pointer-events-none absolute -right-20 -top-28 size-80 rounded-full bg-cyan-400/15 blur-[100px]" />
             <div className="relative grid gap-10 lg:grid-cols-[1.05fr_.95fr] lg:items-end">
               <div>
@@ -177,7 +177,7 @@ export function ReportPreview() {
                   />
                 </div>
               </div>
-              <div className="rounded-2xl border border-lime-300/20 bg-lime-300/[0.07] p-5 sm:p-6">
+              <div className="report-recommendation rounded-2xl border border-lime-300/20 bg-lime-300/[0.07] p-5 sm:p-6">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-lime-200">
                   Recommendation
                 </p>
@@ -214,7 +214,7 @@ export function ReportPreview() {
           </section>
 
           <section className="grid border-b border-white/10 lg:grid-cols-[1.05fr_.95fr]">
-            <div className="min-h-[470px] border-b border-white/10 bg-[#06101d] lg:border-b-0 lg:border-r">
+            <div className="report-model-canvas min-h-[470px] border-b border-white/10 bg-[#06101d] lg:border-b-0 lg:border-r">
               <div className="relative h-[470px]">
                 <LazyParcelScene
                   address={address}
@@ -403,7 +403,7 @@ export function ReportPreview() {
             </div>
           </section>
 
-          <section className="relative overflow-hidden px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
+          <section className="report-unlock relative overflow-hidden px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_0%,rgba(34,211,238,.13),transparent_34%)]" />
             <div className="relative grid gap-8 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
               <div>
