@@ -122,41 +122,93 @@
 - **판정:** 전체 파이프라인의 마스터 키를 만드는 필수 계층
 - **주의:** 주소 좌표 API의 좌표는 GRS80 UTM-K로 제공될 수 있어 WGS84 변환이 필요하다. [공식 안내](https://m1.juso.go.kr/addrlink/qna/qnaDetail.do?bulletinRefSn=66236)처럼 좌표계 메타데이터를 무시하면 지도 중첩이 어긋난다. 주소 API가 곧바로 완전한 PNU를 반환한다고 가정하지 않는다.
 
+### 2.12 주소정보누리집 확장 적용 정책
+
+주소는 검색 문자열 하나가 아니라 모든 후속 데이터·모델·보고서를 연결하는 식별 체계다. 따라서 주소정보누리집의 기능을 아래처럼 하나의 `Address Resolution` 계층으로 흡수한다. 같은 데이터를 다른 UI로 보여 주는 팝업 소스 파일은 중복 구현하지 않고, JSON 기반의 자체 UI와 서버 커넥터를 제품의 기준 경로로 한다.
+
+| 기능                       | 적용             | 제품에서 보존할 값                                                          | 비고                                                                                                |
+| -------------------------- | ---------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 도로명주소 검색 API (JSON) | 필수             | 표준 도로명·지번, 법정동/행정코드, 건물관리번호, 우편번호, 후보 목록        | 사용자가 처음 입력하는 주소를 표준 주소로 확정                                                      |
+| 상세주소 API (JSON)        | 필수             | 건물명, 동·층·호, 공동현관/상세 건물 식별값, 사용자 입력 원문과 정규화 결과 | 집합건물·상가 호실·임대차/공실·기존 건축물 검토까지 연결                                            |
+| 좌표제공 검색 API (JSON)   | 필수             | 원본 X/Y, 원본 좌표계, 변환된 EPSG:5179·WGS84 좌표, 변환 이력               | 필지·건물·POI·위험지도와 정확히 중첩                                                                |
+| 지도제공 API               | 선택/근거 링크   | 공식 지도 링크, 조회 시각, 범위                                             | PLINT의 기본 지도는 VWorld/자체 Three.js 레이어를 사용하고, 도로명주소 지도는 원본 확인 링크로 제공 |
+| 영문주소 검색 API          | 선택 기능 플래그 | 공식 영문 도로명주소                                                        | 해외 투자자용 영문 보고서·공유 링크에서 사용. 국내 분석 판단의 기준값은 한글 주소                   |
+| 도로명/상세주소 팝업 API   | 보조 UI 어댑터   | 사용자가 최종 선택한 공식 후보 값                                           | 자체 검색 UI가 장애이거나 제휴사 페이지에 삽입할 때만 사용                                          |
+| 모바일 팝업 API            | 보조 UI 어댑터   | 위 팝업과 동일                                                              | 별도 데이터 모델이나 별도 분석 파이프라인을 만들지 않는다                                           |
+
+#### Address Resolution 정규 객체
+
+```ts
+type AddressResolution = {
+  input: string;
+  roadAddress: string;
+  jibunAddress: string;
+  englishRoadAddress?: string;
+  legalDongCode: string;
+  administrativeCode?: string;
+  buildingManagementNo?: string;
+  postalCode?: string;
+  detail: {
+    buildingName?: string;
+    dong?: string;
+    floor?: string;
+    unit?: string;
+    rawInput?: string;
+    verification: 'provider_verified' | 'user_confirmed' | 'unverified';
+  };
+  coordinates: {
+    sourceX: number;
+    sourceY: number;
+    sourceCrs: 'GRS80_UTMK' | 'EPSG:5179' | 'EPSG:4326';
+    epsg5179: [number, number];
+    wgs84: [number, number];
+  };
+  parcelCandidates: Array<{
+    pnu: string;
+    matchType: 'exact' | 'building_to_parcel' | 'multiple_parcels';
+    confidence: number;
+  }>;
+  evidence: Evidence[];
+};
+```
+
+`상세주소`는 필지 자체의 법적 경계를 바꾸지 않지만, 동일 건물 안의 호실·용도·임대/매출·상권·기존 건축물 분석을 정확히 연결하는 키다. 그래서 주소 검색 단계에서 버리지 않고 분석 실행·리포트·CRM·견적까지 계속 보존한다. 다만 동·호 주소만으로 하나의 필지가 확정되지 않는 집합건물은 `multiple_parcels`로 표시하고, 사용자가 필지를 선택하도록 한다.
+
 ---
 
 ## 3. 추가 도입할 오픈 API
 
 ### P0 — 제품의 판단력을 직접 높이는 데이터
 
-| 데이터 | 공식 원천 | 새로 만들 수 있는 가치 | 구현 방식 |
-|---|---|---|---|
-| 토지특성 | [국토부 토지특성정보](https://www.data.go.kr/data/15123549/openapi.do) | 지형, 형상, 도로접면, 토지이용 보강 | 필지 속성 결합 |
-| 건축 인허가·철거 | [건축HUB 건축인허가](https://www.data.go.kr/data/15136267/openapi.do) | 주변 공급 파이프라인, 철거/신축 징후, 개발사례 | 월별 증분 적재 |
-| 주택 인허가 | [건축HUB 주택인허가](https://www.data.go.kr/data/15136560/openapi.do) | 공동주택 사업계획·주차·부대시설 벤치마크 | 지역/사업별 조회 |
-| 폐쇄말소·에너지·유지점검 | [건축HUB 6종 재개 공지](https://www.data.go.kr/bbs/ntc/selectNotice.do?originId=NOTICE_0000000004079) | 철거 이력, 운영성능, 노후/리모델링 단서 | 적용범위별 선택 조회 |
-| 현행 법령 | [국가법령정보 공동활용 API](https://open.law.go.kr/LSO/openApi/guideList.do) | 규칙 결과에 조문·시행일·개정이력 연결 | 법령 스냅샷/버전 관리 |
-| 자치법규 | [자치법규정보시스템](https://elis.go.kr/main) | 지역별 조례 검색과 검토 체크리스트 | 공식 연계수단 확인 후 구축; 무단 스크래핑 금지 |
-| 인구·가구·주택·사업체 | [SGIS OpenAPI](https://sgis.kostat.go.kr/developer/html/openApi/api/intro.html) | 배후수요, 가구구조, 업종밀도, 주거시장 프로필 | 생활권 버퍼/격자 집계 |
-| 홍수·도시침수 | [도시침수지도 WMS](https://www.data.go.kr/data/15141734/openapi.do), [국가하천 범람지도](https://www.data.go.kr/data/15141723/openapi.do) | 빈도별 침수심/범위와 지하층 위험 경고 | 공간 중첩; 원본 재가공/상업 이용 제한 주의 |
-| 산사태 | [산림청 산사태위험지도](https://www.data.go.kr/data/15074817/fileData.do) | 경사지 개발 위험과 현장조사 우선순위 | 10m 격자 사전 적재 |
-| 지하안전 | [국토부 지하안전정보](https://www.data.go.kr/data/15041891/openapi.do) | 인근 지반침하·지하개발 평가 이력 | 반경 검색 |
-| 국가유산 공간규제 | [국가유산 공간정보](https://www.data.go.kr/dataset/3070426/openapi.do) | 보존영향 검토구역과 문화유산 인접 위험 | 공간 중첩 |
-| 환경영향평가 사업지 | [EIASS 사업지역 WMS/WFS](https://www.eiass.go.kr/openapiguide/kei_html/chapter04_15.html) | 주변 대형개발·환경검토 대상 파악 | 반경/교차 조회 |
+| 데이터                   | 공식 원천                                                                                                                                 | 새로 만들 수 있는 가치                         | 구현 방식                                      |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| 토지특성                 | [국토부 토지특성정보](https://www.data.go.kr/data/15123549/openapi.do)                                                                    | 지형, 형상, 도로접면, 토지이용 보강            | 필지 속성 결합                                 |
+| 건축 인허가·철거         | [건축HUB 건축인허가](https://www.data.go.kr/data/15136267/openapi.do)                                                                     | 주변 공급 파이프라인, 철거/신축 징후, 개발사례 | 월별 증분 적재                                 |
+| 주택 인허가              | [건축HUB 주택인허가](https://www.data.go.kr/data/15136560/openapi.do)                                                                     | 공동주택 사업계획·주차·부대시설 벤치마크       | 지역/사업별 조회                               |
+| 폐쇄말소·에너지·유지점검 | [건축HUB 6종 재개 공지](https://www.data.go.kr/bbs/ntc/selectNotice.do?originId=NOTICE_0000000004079)                                     | 철거 이력, 운영성능, 노후/리모델링 단서        | 적용범위별 선택 조회                           |
+| 현행 법령                | [국가법령정보 공동활용 API](https://open.law.go.kr/LSO/openApi/guideList.do)                                                              | 규칙 결과에 조문·시행일·개정이력 연결          | 법령 스냅샷/버전 관리                          |
+| 자치법규                 | [자치법규정보시스템](https://elis.go.kr/main)                                                                                             | 지역별 조례 검색과 검토 체크리스트             | 공식 연계수단 확인 후 구축; 무단 스크래핑 금지 |
+| 인구·가구·주택·사업체    | [SGIS OpenAPI](https://sgis.kostat.go.kr/developer/html/openApi/api/intro.html)                                                           | 배후수요, 가구구조, 업종밀도, 주거시장 프로필  | 생활권 버퍼/격자 집계                          |
+| 홍수·도시침수            | [도시침수지도 WMS](https://www.data.go.kr/data/15141734/openapi.do), [국가하천 범람지도](https://www.data.go.kr/data/15141723/openapi.do) | 빈도별 침수심/범위와 지하층 위험 경고          | 공간 중첩; 원본 재가공/상업 이용 제한 주의     |
+| 산사태                   | [산림청 산사태위험지도](https://www.data.go.kr/data/15074817/fileData.do)                                                                 | 경사지 개발 위험과 현장조사 우선순위           | 10m 격자 사전 적재                             |
+| 지하안전                 | [국토부 지하안전정보](https://www.data.go.kr/data/15041891/openapi.do)                                                                    | 인근 지반침하·지하개발 평가 이력               | 반경 검색                                      |
+| 국가유산 공간규제        | [국가유산 공간정보](https://www.data.go.kr/dataset/3070426/openapi.do)                                                                    | 보존영향 검토구역과 문화유산 인접 위험         | 공간 중첩                                      |
+| 환경영향평가 사업지      | [EIASS 사업지역 WMS/WFS](https://www.eiass.go.kr/openapiguide/kei_html/chapter04_15.html)                                                 | 주변 대형개발·환경검토 대상 파악               | 반경/교차 조회                                 |
 
 P0만 추가해도 제품은 `규제 계산기`에서 `개발 리스크 스크리너`로 올라간다.
 
 ### P1 — 고객이 돈을 지불할 시장·운영 인사이트
 
-| 데이터 | 공식 원천 | 제품 기능 |
-|---|---|---|
-| 상가·상권 | [소상공인시장진흥공단 상가(상권)정보](https://www.data.go.kr/data/15012005/openapi.do) | 업종 믹스, 공실 대체지표, 경쟁/앵커 시설, 1층 상업 적합도 |
-| 버스 정류장·도착 | [국토부 버스정류장](https://www.data.go.kr/data/15142032/openapi.do), [TAGO 버스도착](https://www.data.go.kr/data/15098530/openapi.do) | 접근성 점수, 생활권 이동성, 역세권 보조지표 |
-| 학교 | [학교알리미 공개용 데이터](https://www.data.go.kr/data/15098092/openapi.do), [NEIS OpenAPI](https://open.neis.go.kr/portal/guide/apiGuidePage.do) | 학군/통학시설 컨텍스트, 주거수요 설명 |
-| 주차장 | [전국주차장정보표준데이터](https://www.data.go.kr/data/15012896/openapi.do) | 외부 주차공급, 상업시설 접근성, 운영 시나리오 |
-| 대기질 | [AirKorea 대기오염정보](https://www.data.go.kr/en/tcs/dss/selectApiDataDetailView.do?publicDataPk=15073861) | 주거/교육/의료 용도의 환경 컨텍스트 |
-| 부동산 시장지표 | [한국부동산원 R-ONE OpenAPI](https://www.reb.or.kr/r-one/portal/openapi/openApiDevPage.do) | 지역 가격·임대·공실 추세, 개별 실거래의 거시 맥락 |
-| 국가/지역 통계 | [KOSIS OpenAPI](https://kosis.kr/serviceInfo/openAPIGuide.do), [국토교통 통계누리 API](https://stat.molit.go.kr/portal/api/info.do) | 인구·착공·준공·거래량·주택보급의 시계열 대시보드 |
-| 생활안전 | [생활안전지도 OpenAPI](https://safemap.go.kr/dvct/openAPI.do) | 재난·안전 레이어 기반 현장조사 체크리스트 |
+| 데이터           | 공식 원천                                                                                                                                         | 제품 기능                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| 상가·상권        | [소상공인시장진흥공단 상가(상권)정보](https://www.data.go.kr/data/15012005/openapi.do)                                                            | 업종 믹스, 공실 대체지표, 경쟁/앵커 시설, 1층 상업 적합도 |
+| 버스 정류장·도착 | [국토부 버스정류장](https://www.data.go.kr/data/15142032/openapi.do), [TAGO 버스도착](https://www.data.go.kr/data/15098530/openapi.do)            | 접근성 점수, 생활권 이동성, 역세권 보조지표               |
+| 학교             | [학교알리미 공개용 데이터](https://www.data.go.kr/data/15098092/openapi.do), [NEIS OpenAPI](https://open.neis.go.kr/portal/guide/apiGuidePage.do) | 학군/통학시설 컨텍스트, 주거수요 설명                     |
+| 주차장           | [전국주차장정보표준데이터](https://www.data.go.kr/data/15012896/openapi.do)                                                                       | 외부 주차공급, 상업시설 접근성, 운영 시나리오             |
+| 대기질           | [AirKorea 대기오염정보](https://www.data.go.kr/en/tcs/dss/selectApiDataDetailView.do?publicDataPk=15073861)                                       | 주거/교육/의료 용도의 환경 컨텍스트                       |
+| 부동산 시장지표  | [한국부동산원 R-ONE OpenAPI](https://www.reb.or.kr/r-one/portal/openapi/openApiDevPage.do)                                                        | 지역 가격·임대·공실 추세, 개별 실거래의 거시 맥락         |
+| 국가/지역 통계   | [KOSIS OpenAPI](https://kosis.kr/serviceInfo/openAPIGuide.do), [국토교통 통계누리 API](https://stat.molit.go.kr/portal/api/info.do)               | 인구·착공·준공·거래량·주택보급의 시계열 대시보드          |
+| 생활안전         | [생활안전지도 OpenAPI](https://safemap.go.kr/dvct/openAPI.do)                                                                                     | 재난·안전 레이어 기반 현장조사 체크리스트                 |
 
 ### P2 — 고급판과 지역 확장
 
@@ -231,18 +283,18 @@ type Evidence = {
   provider: string;
   datasetId: string;
   sourceUrl: string;
-  observedAt: string;       // 플랫폼 수집 시각
-  effectiveAt?: string;     // 데이터 기준일/시행일
+  observedAt: string; // 플랫폼 수집 시각
+  effectiveAt?: string; // 데이터 기준일/시행일
   licenseCode: string;
   coordinateSystem?: string;
   rawSnapshotId: string;
-  confidence: "verified" | "derived" | "estimated" | "missing";
+  confidence: 'verified' | 'derived' | 'estimated' | 'missing';
 };
 
 type Fact<T> = {
   value: T | null;
   evidence: Evidence[];
-  derivation?: string;      // 계산식 또는 결합 규칙 ID
+  derivation?: string; // 계산식 또는 결합 규칙 ID
   warnings: string[];
 };
 
@@ -269,11 +321,11 @@ type ParcelIntelligence = {
 
 ### 6.1 데이터 성격에 따른 3개 경로
 
-| 경로 | 대상 | 처리 |
-|---|---|---|
-| Request-time API | 주소, 건축물대장, 실거래, 기상 등 | timeout/retry/circuit breaker와 캐시를 둔 실시간 호출 |
-| Spatial Warehouse | 지적, 용도지역, 건물폴리곤, 도로, 위험지도, DEM | 정기 파일/WFS 적재 → PostGIS/래스터에서 공간질의 |
-| Render/Model | 항공 타일, 3D 컨텍스트, 매스 | 화면용 타일과 내보내기용 자체 지오메트리를 분리 |
+| 경로              | 대상                                            | 처리                                                  |
+| ----------------- | ----------------------------------------------- | ----------------------------------------------------- |
+| Request-time API  | 주소, 건축물대장, 실거래, 기상 등               | timeout/retry/circuit breaker와 캐시를 둔 실시간 호출 |
+| Spatial Warehouse | 지적, 용도지역, 건물폴리곤, 도로, 위험지도, DEM | 정기 파일/WFS 적재 → PostGIS/래스터에서 공간질의      |
+| Render/Model      | 항공 타일, 3D 컨텍스트, 매스                    | 화면용 타일과 내보내기용 자체 지오메트리를 분리       |
 
 ### 6.2 Connector Registry
 
@@ -283,14 +335,14 @@ type ParcelIntelligence = {
 type ConnectorManifest = {
   id: string;
   datasetId: string;
-  protocol: "REST" | "WFS" | "WMS" | "WMTS" | "FILE" | "SDK";
-  auth: "serviceKey" | "token" | "none";
+  protocol: 'REST' | 'WFS' | 'WMS' | 'WMTS' | 'FILE' | 'SDK';
+  auth: 'serviceKey' | 'token' | 'none';
   updateCycle: string;
   timeoutMs: number;
   dailyQuota?: number;
   licenseCode: string;
-  commercialUse: "allowed" | "restricted" | "review";
-  derivativeUse: "allowed" | "restricted" | "review";
+  commercialUse: 'allowed' | 'restricted' | 'review';
+  derivativeUse: 'allowed' | 'restricted' | 'review';
   coordinateSystem?: string;
   healthcheck: string;
 };
@@ -380,4 +432,3 @@ API 연결 수를 KPI로 삼지 않는다. 다음 지표를 사용한다.
 - 동일 필지를 재분석했을 때 변경 이유를 설명할 수 있는 비율
 
 판매 가능한 버전의 기준은 "모든 지역의 모든 예외를 안다"가 아니다. **핵심 사실이 안정적으로 모이고, 계산 근거가 보이며, 불확실성을 정직하게 표시하고, 바로 쓸 수 있는 결과물이 생성되는가**다.
-
