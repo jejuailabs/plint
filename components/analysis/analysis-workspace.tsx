@@ -103,7 +103,7 @@ export function AnalysisWorkspace() {
             <Button type="submit" size="sm" className="h-9 bg-cyan-300 px-4 text-slate-950 hover:bg-cyan-200">재분석</Button>
           </form>
           <ThemeToggle />
-          <Button variant="outline" size="icon" className="border-white/10 bg-white/5 text-slate-300" aria-label="결과 내려받기"><Download /></Button>
+          <Link href={`/report?address=${encodeURIComponent(address)}`} className="grid size-9 place-items-center rounded-lg border border-lime-300/25 bg-lime-300/10 text-lime-200 transition hover:bg-lime-300/15" aria-label="의사결정 보고서 미리보기"><Download className="size-4" /></Link>
         </div>
       </header>
 
@@ -203,6 +203,11 @@ export function AnalysisWorkspace() {
                 <button className="mt-4 flex w-full items-center justify-between border-t border-white/8 pt-3 text-xs text-slate-400 hover:text-white"><span>근거와 경고 모두 보기</span><ChevronRight className="size-3.5" /></button>
               </CardContent>
             </Card>
+
+            <Link href={`/report?address=${encodeURIComponent(address)}`} className="block rounded-2xl border border-lime-300/20 bg-lime-300/[0.07] p-4 transition hover:bg-lime-300/[0.12]">
+              <div className="flex items-center justify-between"><span className="text-xs font-semibold text-lime-200">PLINT Decision Report</span><ChevronRight className="size-4 text-lime-200" /></div>
+              <p className="mt-2 text-xs leading-5 text-slate-400">고객에게 바로 보여줄 수 있는 개발·상권 보고서 미리보기</p>
+            </Link>
 
             <p className="px-1 text-[10px] leading-4 text-slate-600">본 결과는 사전검토용 개략 분석이며 인허가, 감정평가 또는 전문 용역을 대체하지 않습니다.</p>
           </aside>
