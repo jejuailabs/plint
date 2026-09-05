@@ -52,7 +52,7 @@ SUPABASE_SECRET_KEY=                # 서버 전용, 절대 클라이언트 노�
 
 # 공공데이터 API
 VWORLD_API_KEY=
-MOLIT_API_KEY=            # 국토교통부 (건축물대장/실거래가/공시지가 공통 또는 개별)
+DATA_GO_KR_API_KEY=       # 건축물대장·인허가·상가업소·실거래 등 공공데이터포털 공통 키
 KMA_API_KEY=               # 기상청
 JUSO_API_KEY=               # 도로명주소
 

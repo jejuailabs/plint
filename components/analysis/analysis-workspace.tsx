@@ -9,6 +9,7 @@ import {
   CircleDollarSign,
   Database,
   Download,
+  Globe2,
   Layers3,
   LoaderCircle,
   MapPinned,
@@ -24,6 +25,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { LazyParcelScene } from '@/components/landing/lazy-parcel-scene';
+import { LazyCesiumContext } from '@/components/analysis/lazy-cesium-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,6 +82,7 @@ export function AnalysisWorkspace() {
   );
   const [message, setMessage] = useState('필지 식별 정보를 확인하고 있습니다.');
   const [zoom, setZoom] = useState(100);
+  const [sceneMode, setSceneMode] = useState<'massing' | 'context'>('massing');
 
   const setWorkspaceZoom = useCallback((nextZoom: number) => {
     setZoom(Math.min(140, Math.max(80, nextZoom)));
@@ -335,18 +338,53 @@ export function AnalysisWorkspace() {
 
             <section className="analysis-scene-frame min-h-[620px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/30">
               <div className="relative h-[520px] xl:h-[calc(100vh-205px)] xl:min-h-[620px]">
-                <LazyParcelScene
-                  address={address}
-                  scenario={scenario}
-                  context={result.data.context}
-                />
+                {sceneMode === 'massing' ? (
+                  <LazyParcelScene
+                    address={address}
+                    scenario={scenario}
+                    context={result.data.context}
+                  />
+                ) : (
+                  <LazyCesiumContext
+                    address={address}
+                    center={
+                      result.data.identity.center.value ?? {
+                        latitude: 37.5446,
+                        longitude: 127.0558,
+                      }
+                    }
+                    areaSqm={result.data.geometry.areaSqm.value ?? undefined}
+                    scenario={scenario}
+                  />
+                )}
                 <div className="pointer-events-none absolute left-5 top-5">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                    Interactive massing
+                    {sceneMode === 'massing'
+                      ? 'Interactive massing'
+                      : 'Geographic context'}
                   </p>
                   <p className="mt-1 text-base font-medium text-white">
-                    {scenario.name} 시나리오
+                    {sceneMode === 'massing'
+                      ? `${scenario.name} 시나리오`
+                      : '도시·지형 컨텍스트'}
                   </p>
+                </div>
+                <div className="absolute right-5 top-5 z-10 flex rounded-xl border border-white/10 bg-slate-950/70 p-1 backdrop-blur">
+                  <button
+                    type="button"
+                    onClick={() => setSceneMode('massing')}
+                    className={`rounded-lg px-3 py-2 text-xs font-medium transition ${sceneMode === 'massing' ? 'bg-cyan-300 text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    3D 매스
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSceneMode('context')}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition ${sceneMode === 'context' ? 'bg-cyan-300 text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    <Globe2 className="size-3.5" />
+                    도시·지형
+                  </button>
                 </div>
                 <div className="absolute bottom-5 left-5 right-5 flex gap-2 overflow-x-auto pb-1">
                   {result.data.scenarios.map((item) => (

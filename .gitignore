@@ -15,6 +15,7 @@
 /.next/
 /.vinext/
 /out/
+/public/cesium/
 
 # misc
 .DS_Store

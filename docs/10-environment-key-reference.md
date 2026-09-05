@@ -29,7 +29,6 @@
 | 환경변수 | 역할 키워드 | 분석에서 하는 일 |
 | --- | --- | --- |
 | `DATA_GO_KR_API_KEY` | 건축물대장 · 건축인허가 · 상가업소 · 주요상권 · 제주 도시정비 · 실거래 | 공공데이터포털에서 승인받은 데이터셋을 공통 호출. 같은 키라도 데이터셋별 활용신청은 별도 필요 |
-| `MOLIT_API_KEY` | 국토교통부 개별 서비스 | 공공데이터포털 공통 키로 제공되지 않는 국토교통부 전용 API 대비용 |
 | `REB_API_KEY` | 가격지수 · 거래량 · 부동산 시장 | 대상지 생활권의 가격·거래·시장 흐름 비교 |
 | `SGIS_CONSUMER_KEY` | 인구 · 가구 · 사업체 | SGIS 통계 API의 클라이언트 식별자 |
 | `SGIS_CONSUMER_SECRET` | 통계 인증 비밀값 | SGIS 토큰 발급용 비밀값. 위 키와 한 쌍으로 사용 |
@@ -41,6 +40,8 @@
 | --- | --- | --- |
 | `SKETCHUP_MCP_ENDPOINT` | SketchUp 작업 서버 | 분석 시나리오를 실제 3D 모델링 작업으로 전달 |
 | `SKETCHUP_MCP_API_KEY` | 3D 작업 인증 | 외부 SketchUp 작업 서버 인증 |
+| `RUNPOD` / `RUNPOD_API_KEY` | Blender GPU 작업 키 | Vercel에서 실행하지 않는 Blender headless 모델 생성·렌더 작업의 서버 인증 |
+| `RUNPOD_ENDPOINT_ID` | Blender Serverless Endpoint | PLINT Blender Docker 워커를 실행할 RunPod 엔드포인트 ID |
 | `OPENAI_API_KEY` | AI 보고서 · 설명 | 근거 데이터에 기반한 보고서 초안·요약 생성 |
 | `CLAUDE_API_KEY` | Anthropic 호환 별칭 | 현재 Anthropic 키 보관용 호환 이름 |
 | `ANTHROPIC_API_KEY` | Anthropic 공식 키 | Claude 기반 보고서 초안·설명 생성. 신규 코드의 우선 이름 |

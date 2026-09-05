@@ -4,6 +4,8 @@ import { requireAuth } from '@/lib/auth/require-auth';
 import { error, success } from '@/lib/api/response';
 import { createClient } from '@/lib/supabase/server';
 import { runPreviewAnalysis } from '@/lib/pipeline/preview';
+import { createBlenderModelingInput } from '@/lib/runpod/from-analysis';
+import { isRunpodConfigured, submitBlenderModelingJob } from '@/lib/runpod/blender-modeling';
 
 const bodySchema = z.object({
   siteId: z.uuid('유효한 사이트 ID를 입력해 주세요.'),
@@ -52,11 +54,34 @@ export async function POST(request: Request) {
       return error('DB_ERROR', '분석 생성에 실패했습니다.', 500);
     }
 
-    // Kick off async pipeline: for now run preview and mark complete
-    // Using a fire-and-forget pattern (no await) to return 202 immediately
+    // RunPod executes Blender outside Vercel. If an endpoint has not been created yet,
+    // keep the existing preview-only flow so ordinary analysis remains available.
     void (async () => {
       try {
         const preview = await runPreviewAnalysis(site.jibun_address);
+
+        if (isRunpodConfigured()) {
+          const job = await submitBlenderModelingJob(createBlenderModelingInput(analysis.id, preview));
+          await supabase
+            .from('analyses')
+            .update({
+              status: 'modeling',
+              result: {
+                ...(preview.data as unknown as Record<string, unknown>),
+                modeling: {
+                  provider: 'runpod-blender',
+                  jobId: job.id,
+                  status: job.status,
+                  requestedAt: new Date().toISOString(),
+                },
+              },
+              coverage: preview.data.coverage as unknown as Record<string, unknown>,
+            })
+            .eq('id', analysis.id)
+            .eq('user_id', claims.userId);
+          return;
+        }
+
         await supabase
           .from('analyses')
           .update({
