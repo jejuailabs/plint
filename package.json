@@ -22,6 +22,7 @@
     "@shadcn/react": "0.3.0",
     "@supabase/ssr": "0.12.5",
     "@supabase/supabase-js": "2.114.0",
+    "@tanstack/react-table": "^9.2.4",
     "cesium": "^1.145.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",

@@ -1,0 +1,156 @@
+/**
+ * Live data source: orchestrates real API connectors for the preview pipeline.
+ *
+ * Calls juso → (building-ledger, land-price, land-transaction, kma-weather) in
+ * parallel, tolerating individual failures. Returns raw ConnectorResult objects
+ * so the caller can build Evidence/Fact records with real snapshot IDs.
+ */
+
+import type { Confidence, Evidence } from '@/lib/domain/evidence';
+import type { ConnectorResult } from '@/lib/external-apis/connector';
+import { getConnectorManifest } from '@/lib/external-apis/registry';
+import { createJusoAddressConnector } from '@/lib/external-apis/connectors/juso-address';
+import type { JusoAddressOutput } from '@/lib/external-apis/connectors/juso-address';
+import { createBuildingLedgerConnector } from '@/lib/external-apis/connectors/building-ledger';
+import type { BuildingLedgerOutput } from '@/lib/external-apis/connectors/building-ledger';
+import { createLandPriceConnector } from '@/lib/external-apis/connectors/land-price';
+import type { LandPriceOutput } from '@/lib/external-apis/connectors/land-price';
+import { createLandTransactionConnector } from '@/lib/external-apis/connectors/land-transaction';
+import type { LandTransactionOutput } from '@/lib/external-apis/connectors/land-transaction';
+import { createKmaWeatherConnector } from '@/lib/external-apis/connectors/kma-weather';
+import type { KmaWeatherOutput } from '@/lib/external-apis/connectors/kma-weather';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export type LiveSourceData = {
+  juso: ConnectorResult<JusoAddressOutput>;
+  building: ConnectorResult<BuildingLedgerOutput>;
+  landPrice: ConnectorResult<LandPriceOutput>;
+  transactions: ConnectorResult<LandTransactionOutput>;
+  weather: ConnectorResult<KmaWeatherOutput>;
+  pnuCode: string | null;
+  adminCode: string | null;
+  warnings: string[];
+};
+
+// ---------------------------------------------------------------------------
+// Evidence helper
+// ---------------------------------------------------------------------------
+
+/** Build an Evidence record from a connector manifest + live result metadata. */
+export function liveEvidence(
+  connectorId: string,
+  result: Pick<ConnectorResult<unknown>, 'rawSnapshotId' | 'observedAt'>,
+  confidence: Confidence = 'verified',
+): Evidence {
+  const manifest = getConnectorManifest(connectorId);
+  if (!manifest) throw new Error(`Unknown connector: ${connectorId}`);
+  return {
+    provider: manifest.provider,
+    datasetId: manifest.datasetId,
+    sourceUrl: manifest.sourceUrl,
+    observedAt: result.observedAt,
+    effectiveAt: new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1)).toISOString(),
+    licenseCode: manifest.licenseCode,
+    coordinateSystem: manifest.coordinateSystem,
+    rawSnapshotId: result.rawSnapshotId,
+    confidence,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ASOS station mapping (admin-code prefix → nearest station)
+// ---------------------------------------------------------------------------
+
+const ADMIN_TO_STATION: Record<string, string> = {
+  '11': '108', '26': '159', '27': '143', '28': '112',
+  '29': '156', '30': '133', '31': '152', '36': '133',
+  '41': '108', '42': '101', '43': '131', '44': '129',
+  '45': '146', '46': '156', '47': '143', '48': '155',
+  '50': '184',
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function emptyResult<T>(warning: string): ConnectorResult<T> {
+  return {
+    data: null,
+    rawSnapshotId: `skip-${Date.now()}`,
+    observedAt: new Date().toISOString(),
+    warnings: [warning],
+  };
+}
+
+function unwrapSettled<T>(
+  settled: PromiseSettledResult<ConnectorResult<T>>,
+  label: string,
+): ConnectorResult<T> {
+  if (settled.status === 'fulfilled') return settled.value;
+  return emptyResult<T>(`${label}: ${String(settled.reason)}`);
+}
+
+// ---------------------------------------------------------------------------
+// Main fetch
+// ---------------------------------------------------------------------------
+
+export async function fetchLiveSourceData(address: string): Promise<LiveSourceData> {
+  const warnings: string[] = [];
+
+  // Step 1: address → PNU + coordinates (gate for downstream calls)
+  const juso = await createJusoAddressConnector().execute({ address });
+
+  if (!juso.data) {
+    const skip = '주소 해석 실패로 조회 불가';
+    return {
+      juso,
+      building: emptyResult<BuildingLedgerOutput>(skip),
+      landPrice: emptyResult<LandPriceOutput>(skip),
+      transactions: emptyResult<LandTransactionOutput>(skip),
+      weather: emptyResult<KmaWeatherOutput>(skip),
+      pnuCode: null,
+      adminCode: null,
+      warnings: [...juso.warnings, '주소 해석 실패로 후속 조회를 건너뛰었습니다.'],
+    };
+  }
+
+  // Step 2: parse PNU (19 digits: admCd[10] + mtFlag[1] + bon[4] + bu[4])
+  const pnu = juso.data.pnuCode;
+  const adminCode = juso.data.administrativeCode;
+  const sigunguCode = pnu.slice(0, 5);
+  const bjdongCode = pnu.slice(5, 10);
+  const bun = pnu.slice(11, 15);
+  const ji = pnu.slice(15, 19);
+
+  // Transaction query: previous month
+  const now = new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const dealYM = `${prev.getFullYear()}${String(prev.getMonth() + 1).padStart(2, '0')}`;
+
+  // Weather query: previous full year, nearest station
+  const lastYear = now.getFullYear() - 1;
+  const stnId = ADMIN_TO_STATION[adminCode.slice(0, 2)] ?? '108';
+
+  // Step 3: parallel downstream calls
+  const [bldg, price, tx, wx] = await Promise.allSettled([
+    createBuildingLedgerConnector().execute({ sigunguCode, bjdongCode, bun, ji }),
+    createLandPriceConnector().execute({ pnuCode: pnu }),
+    createLandTransactionConnector().execute({ lawdCode: sigunguCode, dealYearMonth: dealYM }),
+    createKmaWeatherConnector().execute({ stationId: stnId, startDate: `${lastYear}0101`, endDate: `${lastYear}1231` }),
+  ]);
+
+  const building = unwrapSettled(bldg, '건축물대장 조회 실패');
+  const landPrice = unwrapSettled(price, '공시지가 조회 실패');
+  const transactions = unwrapSettled(tx, '실거래가 조회 실패');
+  const weather = unwrapSettled(wx, '기상 조회 실패');
+
+  // Collect per-connector warnings for failed lookups
+  for (const r of [building, landPrice, transactions, weather]) {
+    if (!r.data && r.warnings.length) warnings.push(...r.warnings);
+  }
+
+  return { juso, building, landPrice, transactions, weather, pnuCode: pnu, adminCode, warnings };
+}

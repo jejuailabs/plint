@@ -1,11 +1,16 @@
-import { fact, type Fact } from '@/lib/domain/evidence';
-import type { AnalysisPreviewResponse, ParcelIntelligence } from '@/lib/domain/parcel-intelligence';
+import { fact, type Evidence } from '@/lib/domain/evidence';
+import type { AnalysisPreviewResponse, ParcelIntelligence, Polygon } from '@/lib/domain/parcel-intelligence';
 import { createMockSourceData } from '@/lib/external-apis/mock-provider';
 import { calculateScenarios } from '@/lib/pipeline/regulations/calculate-envelope';
+import { fetchLiveSourceData, liveEvidence } from '@/lib/pipeline/live-source';
 
-function factsIn(value: unknown): Fact<unknown>[] {
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+function factsIn(value: unknown): { evidence: Evidence[] }[] {
   if (!value || typeof value !== 'object') return [];
-  if ('value' in value && 'evidence' in value && 'warnings' in value) return [value as Fact<unknown>];
+  if ('value' in value && 'evidence' in value && 'warnings' in value) return [value as { evidence: Evidence[] }];
   if (Array.isArray(value)) return value.flatMap(factsIn);
   return Object.values(value).flatMap(factsIn);
 }
@@ -25,7 +30,22 @@ function calculateCoverage(value: Omit<ParcelIntelligence, 'coverage'>) {
   return { percent, ...counts };
 }
 
+// ---------------------------------------------------------------------------
+// Public entry point
+// ---------------------------------------------------------------------------
+
 export async function runPreviewAnalysis(address: string): Promise<AnalysisPreviewResponse> {
+  if (process.env.USE_MOCK_EXTERNAL_API === 'true') {
+    return runMockPreview(address);
+  }
+  return runLivePreview(address);
+}
+
+// ---------------------------------------------------------------------------
+// Mock path (unchanged logic, kept as fallback)
+// ---------------------------------------------------------------------------
+
+async function runMockPreview(address: string): Promise<AnalysisPreviewResponse> {
   const startedAt = performance.now();
   const source = createMockSourceData(address);
   const { evidence, suffix } = source;
@@ -121,6 +141,211 @@ export async function runPreviewAnalysis(address: string): Promise<AnalysisPrevi
       requestId: crypto.randomUUID(),
       generatedAt: new Date().toISOString(),
       mode: 'mock',
+      durationMs: Math.round(performance.now() - startedAt),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Live path — real API connectors
+// ---------------------------------------------------------------------------
+
+/** Approximate boundary rectangle from center + estimated area (lon/lat). */
+function approxBoundary(lat: number, lon: number, areaSqm: number): Polygon {
+  const side = Math.sqrt(areaSqm);
+  const dLat = (side / 2) / 111_320;
+  const dLon = (side / 2) / (111_320 * Math.cos((lat * Math.PI) / 180));
+  return {
+    type: 'Polygon',
+    coordinates: [[
+      [lon - dLon, lat - dLat],
+      [lon + dLon, lat - dLat],
+      [lon + dLon, lat + dLat],
+      [lon - dLon, lat + dLat],
+      [lon - dLon, lat - dLat],
+    ]],
+  };
+}
+
+/** Map Korean land-slope code to approximate percent. */
+function slopeFromCode(code: string | null): number | null {
+  if (!code) return null;
+  const map: Record<string, number> = { '01': 1.5, '02': 9, '03': 22.5, '04': 35 };
+  return map[code] ?? null;
+}
+
+/** Compute median price-per-sqm from transaction list. */
+function medianPricePerSqm(items: { price: number; areaSqm: number }[]): number {
+  const vals = items.filter((t) => t.areaSqm > 0).map((t) => t.price / t.areaSqm).sort((a, b) => a - b);
+  if (vals.length === 0) return 0;
+  const mid = Math.floor(vals.length / 2);
+  return Math.round(vals.length % 2 !== 0 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2);
+}
+
+async function runLivePreview(address: string): Promise<AnalysisPreviewResponse> {
+  const startedAt = performance.now();
+  const src = await fetchLiveSourceData(address);
+
+  const jusoData = src.juso.data;
+  const bldgData = src.building.data;
+  const priceData = src.landPrice.data;
+  const txData = src.transactions.data;
+  const wxData = src.weather.data;
+
+  // Evidence shorthand — returns [] when the connector produced no data.
+  const ev = (id: string, r: { data: unknown; rawSnapshotId: string; observedAt: string }, c?: Evidence['confidence']) =>
+    r.data ? [liveEvidence(id, r, c)] : [];
+
+  // Estimate parcel area from building data when available.
+  let estimatedArea = 500;
+  if (bldgData?.exists && bldgData.totalFloorAreaSqm && bldgData.floorsAbove && bldgData.floorsAbove > 0) {
+    estimatedArea = Math.round((bldgData.totalFloorAreaSqm / bldgData.floorsAbove) / 0.55);
+  }
+
+  const officialPrice = priceData?.officialPricePerSqm ?? 0;
+  const compMedian = txData ? medianPricePerSqm(txData) : 0;
+  const compCount = txData?.filter((t) => t.areaSqm > 0).length ?? 0;
+
+  const buildingCoverageLimit = 60;
+  const floorAreaRatioLimit = 200;
+
+  const scenarios = calculateScenarios({
+    areaSqm: estimatedArea,
+    buildingCoverageLimit,
+    floorAreaRatioLimit,
+    comparablePricePerSqm: compMedian || officialPrice * 2.35,
+    landPricePerSqm: officialPrice,
+  });
+
+  const lat = jusoData?.latitude ?? 0;
+  const lon = jusoData?.longitude ?? 0;
+
+  const partial: Omit<ParcelIntelligence, 'coverage'> = {
+    // -- identity (from juso) ------------------------------------------------
+    identity: {
+      pnu: fact(src.pnuCode, ev('juso-coordinate', src.juso)),
+      jibunAddress: fact(jusoData?.jibunAddress ?? address, ev('juso-coordinate', src.juso)),
+      roadAddress: fact(jusoData?.roadAddress ?? null, ev('juso-coordinate', src.juso)),
+      center: fact({ latitude: lat, longitude: lon }, ev('juso-coordinate', src.juso)),
+    },
+
+    // -- geometry (cadastral WFS not yet connected — estimated) ---------------
+    geometry: {
+      areaSqm: fact(estimatedArea, [], {
+        derivation: 'building-footprint-estimate:v1',
+        warnings: ['연속지적도 연결 전 건축물대장 기반 추정값입니다.'],
+      }),
+      landCategory: fact('대', [], { warnings: ['토지이용계획 연결 전 기본값입니다.'] }),
+      boundary: fact(approxBoundary(lat, lon, estimatedArea), [], {
+        warnings: ['연속지적도 연결 전 좌표 기반 근사 경계입니다.'],
+      }),
+      frontageM: fact<number>(null, [], { warnings: ['연속지적도·도로 데이터 연결 전 산출 불가'] }),
+      roadWidthM: fact<number>(null, [], { warnings: ['도로 데이터 연결 전 산출 불가'] }),
+      slopePercent: fact(
+        slopeFromCode(priceData?.slopeCode ?? null),
+        ev('land-characteristics', src.landPrice, 'derived'),
+        priceData?.slopeCode ? { derivation: 'slope-code-midpoint:v1' } : { warnings: ['경사도 정보 없음'] },
+      ),
+    },
+
+    // -- planning (land-use-plan not yet connected) --------------------------
+    planning: [
+      {
+        code: 'UQA-PENDING', name: '용도지역 확인 필요', category: 'zoning', status: 'review_required',
+        summary: fact(
+          `건폐율 ${buildingCoverageLimit}% · 용적률 ${floorAreaRatioLimit}% (기본값 적용)`,
+          [],
+          { warnings: ['토지이용계획 연결 전 기본 용도지역 한도를 적용합니다. 실제 용도지역에 따라 달라질 수 있습니다.'] },
+        ),
+      },
+      {
+        code: 'ROAD-ACCESS', name: '접도 검토', category: 'road', status: 'review_required',
+        summary: fact<string>(null, [], { warnings: ['도로 데이터 연결 전 접도 검토 불가'] }),
+      },
+    ],
+
+    // -- existing buildings (from building ledger) ---------------------------
+    existing: bldgData?.exists
+      ? [{
+          id: 'building-1',
+          use: fact(bldgData.use, ev('building-ledger', src.building)),
+          floorsAbove: fact(bldgData.floorsAbove, ev('building-ledger', src.building)),
+          totalFloorAreaSqm: fact(bldgData.totalFloorAreaSqm, ev('building-ledger', src.building)),
+          approvedAt: fact(
+            bldgData.completionYear ? `${bldgData.completionYear}-01-01` : null,
+            ev('building-ledger', src.building),
+          ),
+        }]
+      : [],
+
+    // -- context buildings (GIS building layer not connected) -----------------
+    context: [],
+
+    // -- market (from land-price + transactions) -----------------------------
+    market: {
+      officialLandPricePerSqm: fact(
+        officialPrice || null,
+        ev('land-characteristics', src.landPrice),
+      ),
+      comparableMedianPerSqm: fact(
+        compMedian || null,
+        ev('land-transactions', src.transactions, 'derived'),
+        { derivation: 'comparable-median:v1:district,use,area,time' },
+      ),
+      comparableCount: fact(compCount, ev('land-transactions', src.transactions)),
+      trendPercent: fact<number>(null, [], {
+        warnings: ['복수 월 거래 데이터 비교 전 추세 산출 불가'],
+      }),
+    },
+
+    // -- demand (SGIS not connected) -----------------------------------------
+    demand: {
+      population1km: fact<number>(null, [], { warnings: ['SGIS 연결 전 조회 불가'] }),
+      households1km: fact<number>(null, [], { warnings: ['SGIS 연결 전 조회 불가'] }),
+      businesses500m: fact<number>(null, [], { warnings: ['상권 API 연결 전 조회 불가'] }),
+      transitStops500m: fact<number>(null, [], { warnings: ['교통 API 연결 전 조회 불가'] }),
+    },
+
+    // -- climate (from KMA weather, optional) --------------------------------
+    climate: {
+      annualSunlightHours: fact(
+        wxData?.annualSunlightHours ?? null,
+        ev('asos-daily', src.weather, 'estimated'),
+        { warnings: wxData ? ['최근접 관측소 기반 값입니다.'] : ['기상 API 미연결'] },
+      ),
+      solarRadiationKwhM2: fact(
+        wxData?.solarRadiation ?? null,
+        ev('asos-daily', src.weather, 'estimated'),
+        { warnings: wxData ? ['최근접 관측소 기반 값입니다.'] : ['기상 API 미연결'] },
+      ),
+      prevailingWind: fact(
+        wxData?.prevailingWind ?? null,
+        ev('asos-daily', src.weather, 'estimated'),
+      ),
+    },
+
+    // -- risks (dedicated connectors not connected) --------------------------
+    risks: [
+      { code: 'FLOOD', label: '도시침수', level: 'unknown', finding: fact<string>(null, [], { warnings: ['침수 위험지도 연결 전'] }), nextAction: '공식 홍수위험지도에서 대상 필지 확인' },
+      { code: 'HERITAGE', label: '국가유산', level: 'unknown', finding: fact<string>(null, [], { warnings: ['유산 공간규제 연결 전'] }), nextAction: '인허가 전 최신 공간규제 재조회' },
+      { code: 'GROUND', label: '지하안전', level: 'unknown', finding: fact<string>(null, [], { warnings: ['지하안전 API 연결 전'] }), nextAction: '지반조사 및 인접 굴착계획 확인' },
+    ],
+
+    scenarios,
+  };
+
+  const data: ParcelIntelligence = { ...partial, coverage: calculateCoverage(partial) };
+
+  // Determine mode: live if primary connectors returned data, hybrid if partial.
+  const primaryOk = !!(jusoData && bldgData && priceData && txData);
+  const anyOk = !!(jusoData || bldgData || priceData || txData || wxData);
+
+  return {
+    data,
+    meta: {
+      requestId: crypto.randomUUID(),
+      generatedAt: new Date().toISOString(),
+      mode: primaryOk ? 'live' : anyOk ? 'hybrid' : 'mock',
       durationMs: Math.round(performance.now() - startedAt),
     },
   };

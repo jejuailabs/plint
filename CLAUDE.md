@@ -99,3 +99,13 @@ docs/                      # 본 스펙 문서 모음
 ## 7. 모호한 부분 처리 원칙
 
 스펙 문서에 없는 세부사항(예: 특정 화면의 정확한 문구, 색상 값 등)을 만나면, 합리적인 기본값으로 진행하고 어떤 가정을 했는지 간단히 남길 것. 단, DB 스키마 변경/과금 정책/외부 API 키 발급 방식처럼 되돌리기 어려운 결정은 진행 전 반드시 질문할 것.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

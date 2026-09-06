@@ -1,49 +1,233 @@
-import { ArrowLeft, Database, ShieldCheck, Users } from 'lucide-react';
-import Link from 'next/link';
+import {
+  Activity,
+  AlertTriangle,
+  CreditCard,
+  TrendingUp,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 import { redirect } from 'next/navigation';
-import type { ReactNode } from 'react';
 
-import { ThemeToggle } from '@/components/theme-toggle';
+import { StatCard } from '@/components/admin/stat-card';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/server';
+import { AdminPlanChart } from '@/components/admin/admin-plan-chart';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect('/login');
-  if (user.app_metadata?.role !== 'admin') redirect('/dashboard');
-
-  return (
-    <main className="site-shell min-h-screen px-5 py-6 text-white sm:px-8">
-      <header className="mx-auto flex max-w-6xl items-center justify-between">
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-slate-300 transition hover:text-white">
-          <ArrowLeft className="size-4" /> 워크스페이스
-        </Link>
-        <ThemeToggle />
-      </header>
-      <section className="mx-auto mt-16 max-w-6xl">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-2xl border border-lime-300/35 bg-lime-300/10"><ShieldCheck className="size-5 text-lime-200" /></span>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-lime-200/80">PLINT Control</p>
-            <h1 className="mt-1 text-3xl font-medium tracking-[-0.04em] sm:text-4xl">관리자 콘솔</h1>
-          </div>
-        </div>
-        <p className="mt-5 max-w-2xl leading-7 text-slate-300">관리자 권한이 확인된 계정만 접근할 수 있습니다. 운영 데이터와 고객 기능은 실제 API 연결 후 이 콘솔에서 관리합니다.</p>
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
-          <AdminCard icon={<Users className="size-5" />} title="사용자 관리" description="가입 사용자, 권한, 세그먼트 현황" status="구현 예정" />
-          <AdminCard icon={<Database className="size-5" />} title="데이터 운영" description="커넥터 상태, 수집 이력, 데이터 커버리지" status="구현 예정" />
-          <AdminCard icon={<ShieldCheck className="size-5" />} title="권한 상태" description={`${user.email ?? '현재 계정'} · 관리자 권한 확인됨`} status="정상" />
-        </div>
-      </section>
-    </main>
-  );
+function startOf(unit: 'day' | 'week' | 'month') {
+  const now = new Date();
+  if (unit === 'day') return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  if (unit === 'week') {
+    const d = new Date(now);
+    d.setDate(d.getDate() - d.getDay());
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 }
 
-function AdminCard({ icon, title, description, status }: { icon: ReactNode; title: string; description: string; status: string }) {
-  return <section className="rounded-3xl border border-white/10 bg-white/[0.045] p-6"><div className="flex items-center justify-between"><span className="text-cyan-200">{icon}</span><span className="rounded-full border border-white/10 bg-black/15 px-2.5 py-1 text-xs text-slate-300">{status}</span></div><h2 className="mt-8 text-lg font-semibold">{title}</h2><p className="mt-2 leading-6 text-sm text-slate-400">{description}</p></section>;
+export default async function AdminDashboardPage() {
+  const supabase = await createClient();
+
+  // Parallel queries
+  const [
+    todaySignups,
+    weekSignups,
+    monthSignups,
+    activeSubscriptions,
+    monthRevenue,
+    todayAnalyses,
+    failedAnalyses,
+    apiStatus,
+    planDistribution,
+  ] = await Promise.all([
+    supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', startOf('day')),
+    supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', startOf('week')),
+    supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', startOf('month')),
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active'),
+    supabase
+      .from('payments')
+      .select('amount')
+      .eq('status', 'paid')
+      .gte('paid_at', startOf('month')),
+    supabase
+      .from('analyses')
+      .select('id, status', { count: 'exact' })
+      .gte('created_at', startOf('day')),
+    supabase
+      .from('analyses')
+      .select('id, site_id, user_id, status, error_message, created_at')
+      .eq('status', 'failed')
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('api_provider_status')
+      .select('provider, is_healthy, last_checked_at, last_error'),
+    supabase
+      .from('subscriptions')
+      .select('plan_id, plans(name)')
+      .eq('status', 'active'),
+  ]);
+
+  const totalRevenue = (monthRevenue.data ?? []).reduce(
+    (sum, p) => sum + (p.amount ?? 0),
+    0,
+  );
+
+  const todayAnalysesData = todayAnalyses.data ?? [];
+  const todayTotal = todayAnalyses.count ?? 0;
+  const todayFailed = todayAnalysesData.filter((a) => a.status === 'failed').length;
+  const todayCompleted = todayAnalysesData.filter((a) => a.status === 'completed').length;
+
+  // Plan distribution for chart
+  const planCounts: Record<string, number> = {};
+  for (const sub of planDistribution.data ?? []) {
+    const name = (sub as any).plans?.name ?? '알 수 없음';
+    planCounts[name] = (planCounts[name] ?? 0) + 1;
+  }
+  const planChartData = Object.entries(planCounts).map(([name, value]) => ({
+    name,
+    value,
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">관리자 대시보드</h1>
+        <p className="text-sm text-muted-foreground">
+          서비스 운영 현황을 한눈에 확인합니다.
+        </p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="오늘 가입"
+          value={todaySignups.count ?? 0}
+          description={`이번주 ${weekSignups.count ?? 0}명 / 이번달 ${monthSignups.count ?? 0}명`}
+          icon={<UserPlus className="size-4" />}
+        />
+        <StatCard
+          title="활성 구독"
+          value={activeSubscriptions.count ?? 0}
+          description="현재 유효한 구독 수"
+          icon={<Users className="size-4" />}
+        />
+        <StatCard
+          title="이번달 매출"
+          value={`${totalRevenue.toLocaleString()}원`}
+          description="결제 성공 기준"
+          icon={<CreditCard className="size-4" />}
+        />
+        <StatCard
+          title="오늘 분석 요청"
+          value={todayTotal}
+          description={`완료 ${todayCompleted} / 실패 ${todayFailed}`}
+          icon={<Activity className="size-4" />}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Plan distribution chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">플랜별 구독 분포</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {planChartData.length > 0 ? (
+              <AdminPlanChart data={planChartData} />
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                구독 데이터가 없습니다.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* API Health Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">
+              외부 API 상태
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(apiStatus.data ?? []).length > 0 ? (
+              <div className="space-y-3">
+                {(apiStatus.data ?? []).map((api) => (
+                  <div
+                    key={api.provider}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="text-sm font-medium">{api.provider}</span>
+                    <Badge
+                      variant={api.is_healthy ? 'default' : 'destructive'}
+                    >
+                      {api.is_healthy ? '정상' : '장애'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                등록된 API 프로바이더가 없습니다.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent failed analyses */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+            <AlertTriangle className="size-4 text-destructive" />
+            최근 실패한 분석
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(failedAnalyses.data ?? []).length > 0 ? (
+            <div className="space-y-2">
+              {(failedAnalyses.data ?? []).map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
+                >
+                  <div className="space-y-0.5">
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {a.id.slice(0, 8)}...
+                    </p>
+                    <p className="text-xs text-destructive">
+                      {a.error_message ?? '알 수 없는 오류'}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(a.created_at).toLocaleString('ko-KR')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              최근 실패한 분석이 없습니다.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
