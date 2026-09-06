@@ -1,13 +1,13 @@
 'use client';
 
 import { ArrowRight, DatabaseZap, Layers3, ShieldCheck } from 'lucide-react';
-import { SyntheticEvent, useState } from 'react';
+import { useCallback, useState } from 'react';
 
+import { AddressSearch, type AddressResult } from '@/components/address-search';
 import { LazyParcelScene } from '@/components/landing/lazy-parcel-scene';
 import { Badge } from '@/components/ui/badge';
 import { AuthNav } from '@/components/auth-nav';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const signals = [
@@ -17,17 +17,15 @@ const signals = [
 ] as const;
 
 export default function Home() {
-  const [address, setAddress] = useState('서울특별시 성동구 성수동2가 277-17');
-  const [submittedAddress, setSubmittedAddress] = useState(address);
+  const [selectedAddress, setSelectedAddress] = useState('');
+  const [submittedAddress, setSubmittedAddress] = useState('');
 
-  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalized = address.trim();
-    if (normalized) {
-      setSubmittedAddress(normalized);
-      window.location.assign(`/analysis?address=${encodeURIComponent(normalized)}`);
-    }
-  }
+  const handleAddressSelect = useCallback((result: AddressResult) => {
+    const addr = result.jibunAddress || result.roadAddress;
+    setSelectedAddress(addr);
+    setSubmittedAddress(addr);
+    window.location.assign(`/analysis?address=${encodeURIComponent(addr)}`);
+  }, []);
 
   return (
     <main className="site-shell min-h-screen overflow-hidden text-white">
@@ -68,22 +66,12 @@ export default function Home() {
             주소 하나로 필지, 법규, 시장, 위험 데이터를 결합하고 실제 설계로 이어지는 3D 개발 시나리오를 만듭니다.
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-9 max-w-xl rounded-2xl border border-white/12 bg-white/[0.065] p-2 shadow-[0_24px_90px_rgba(0,0,0,.32)] backdrop-blur-xl">
-            <label className="sr-only" htmlFor="parcel-address">분석할 지번 또는 도로명주소</label>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                id="parcel-address"
-                value={address}
-                onChange={(event) => setAddress(event.target.value)}
-                placeholder="지번 또는 도로명주소를 입력하세요"
-                className="h-12 flex-1 border-0 bg-transparent px-4 text-[15px] text-white shadow-none placeholder:text-slate-500 focus-visible:ring-0"
-              />
-              <Button type="submit" className="h-12 rounded-xl bg-lime-300 px-5 text-slate-950 hover:bg-lime-200">
-                가능성 분석
-                <ArrowRight className="ml-1 size-4" />
-              </Button>
-            </div>
-          </form>
+          <div className="mt-9 max-w-xl rounded-2xl border border-white/12 bg-white/[0.065] p-2 shadow-[0_24px_90px_rgba(0,0,0,.32)] backdrop-blur-xl">
+            <AddressSearch
+              onSelect={handleAddressSelect}
+              placeholder="도로명, 지번, 건물명으로 검색"
+            />
+          </div>
 
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-xs text-slate-400">
             <span className="flex items-center gap-2"><DatabaseZap className="size-3.5 text-cyan-300" />20+ 공공데이터 통합</span>

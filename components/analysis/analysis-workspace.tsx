@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Building2,
+  Box,
   CheckCircle2,
   ChevronRight,
   CircleDollarSign,
@@ -17,14 +18,16 @@ import {
   Plus,
   RefreshCw,
   Ruler,
+  Save,
   ShieldCheck,
   Sparkles,
+  Sun,
   TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { LazyParcelScene } from '@/components/landing/lazy-parcel-scene';
+import { LazyAnalysisScene } from '@/components/analysis/lazy-analysis-scene';
 import { LazyCesiumContext } from '@/components/analysis/lazy-cesium-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,7 +39,13 @@ import type {
   DevelopmentScenario,
 } from '@/lib/domain/parcel-intelligence';
 
-const fallbackAddress = '서울특별시 성동구 성수동2가 277-17';
+type SunlightData = {
+  winterSolstice: { sunrise: string; sunset: string; daylightHours: number };
+  summerSolstice: { sunrise: string; sunset: string; daylightHours: number };
+  equinox: { sunrise: string; sunset: string; daylightHours: number };
+  annualSunlightHoursEstimate: number;
+  disclaimer: string;
+};
 
 function formatKrw(value: number) {
   if (value >= 100_000_000) return `${(value / 100_000_000).toFixed(1)}억원`;
@@ -73,16 +82,21 @@ function ScenarioButton({
 }
 
 export function AnalysisWorkspace() {
-  const [address, setAddress] = useState(fallbackAddress);
-  const [query, setQuery] = useState(fallbackAddress);
+  const [address, setAddress] = useState('');
+  const [query, setQuery] = useState('');
   const [result, setResult] = useState<AnalysisPreviewResponse | null>(null);
   const [scenarioId, setScenarioId] = useState('balanced');
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
-    'loading',
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+    'idle',
   );
-  const [message, setMessage] = useState('필지 식별 정보를 확인하고 있습니다.');
+  const [message, setMessage] = useState('');
   const [zoom, setZoom] = useState(100);
   const [sceneMode, setSceneMode] = useState<'massing' | 'context'>('massing');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [exportStatus, setExportStatus] = useState<'idle' | 'submitting' | 'submitted' | 'error'>('idle');
+  const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
+  const [sunlight, setSunlight] = useState<SunlightData | null>(null);
+  const [sunlightStatus, setSunlightStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
   const setWorkspaceZoom = useCallback((nextZoom: number) => {
     setZoom(Math.min(140, Math.max(80, nextZoom)));
@@ -120,6 +134,18 @@ export function AnalysisWorkspace() {
       setResult(payload);
       setScenarioId('balanced');
       setStatus('ready');
+      const center = payload.data.identity.center.value;
+      if (center) {
+        setSunlightStatus('loading');
+        fetch('/api/analysis/sunlight', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ latitude: center.latitude, longitude: center.longitude }),
+        })
+          .then((r) => r.ok ? r.json() : Promise.reject())
+          .then((data) => { setSunlight(data as SunlightData); setSunlightStatus('ready'); })
+          .catch(() => setSunlightStatus('error'));
+      }
     } catch (error) {
       setStatus('error');
       setMessage(
@@ -130,13 +156,12 @@ export function AnalysisWorkspace() {
 
   useEffect(() => {
     const initial =
-      new URLSearchParams(window.location.search).get('address')?.trim() ||
-      fallbackAddress;
-    queueMicrotask(() => {
+      new URLSearchParams(window.location.search).get('address')?.trim() || '';
+    if (initial) {
       setAddress(initial);
       setQuery(initial);
       void analyze(initial);
-    });
+    }
   }, [analyze]);
 
   const scenario = useMemo(
@@ -145,6 +170,65 @@ export function AnalysisWorkspace() {
       result?.data.scenarios[0],
     [result, scenarioId],
   );
+
+  const saveToDb = useCallback(async () => {
+    if (!result || saveStatus === 'saving') return;
+    setSaveStatus('saving');
+    try {
+      const res = await fetch('/api/analysis/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address,
+          result: result.data,
+          coverage: result.data.coverage,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(body?.error?.message ?? '저장 실패');
+      }
+      if (body?.data?.analysisId) setSavedAnalysisId(body.data.analysisId);
+      setSaveStatus('saved');
+    } catch {
+      setSaveStatus('error');
+    }
+  }, [result, address, saveStatus]);
+
+  const exportBlender = useCallback(async () => {
+    if (!result || !scenario || exportStatus === 'submitting') return;
+    if (!savedAnalysisId) {
+      setExportStatus('error');
+      return;
+    }
+    setExportStatus('submitting');
+    try {
+      const boundary = result.data.geometry.boundary.value;
+      const res = await fetch('/api/modeling/runpod', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          analysisId: savedAnalysisId,
+          address: result.data.identity.jibunAddress.value,
+          parcel: {
+            areaSqm: result.data.geometry.areaSqm.value ?? 500,
+            boundary: boundary?.coordinates[0]?.map(([lon, lat]: [number, number]) => ({ latitude: lat, longitude: lon })),
+          },
+          scenario: {
+            id: scenario.id,
+            label: scenario.name,
+            floors: scenario.floors.length,
+            buildingCoveragePercent: scenario.buildingCoverageRatio,
+            floorAreaRatioPercent: scenario.floorAreaRatio,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error('Blender 모델링 요청 실패');
+      setExportStatus('submitted');
+    } catch {
+      setExportStatus('error');
+    }
+  }, [result, scenario, savedAnalysisId, exportStatus]);
 
   function submit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -184,6 +268,7 @@ export function AnalysisWorkspace() {
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              placeholder="지번 또는 도로명주소를 입력하세요"
               className="h-9 border-0 bg-transparent text-sm text-white focus-visible:ring-0"
               aria-label="분석 주소"
             />
@@ -235,6 +320,49 @@ export function AnalysisWorkspace() {
       </header>
 
       <div className="analysis-zoom-surface" style={{ zoom: `${zoom}%` }}>
+        {status === 'idle' && (
+          <div className="grid min-h-[calc(100vh-64px)] place-items-center px-6">
+            <div className="w-full max-w-xl text-center">
+              <MapPinned className="mx-auto size-10 text-cyan-300/60" />
+              <h2 className="mt-5 text-xl font-semibold text-white">
+                새 필지 분석
+              </h2>
+              <p className="mt-2 text-sm text-slate-400">
+                분석할 대지의 지번 또는 도로명주소를 입력하세요
+              </p>
+              <form
+                onSubmit={submit}
+                className="mx-auto mt-8 rounded-2xl border border-white/12 bg-white/[0.065] p-2 shadow-[0_24px_90px_rgba(0,0,0,.32)] backdrop-blur-xl"
+              >
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <div className="flex flex-1 items-center gap-2 px-2">
+                    <MapPinned className="size-4 shrink-0 text-cyan-300" />
+                    <Input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="지번 또는 도로명주소를 입력하세요"
+                      className="h-12 flex-1 border-0 bg-transparent px-2 text-[15px] text-white shadow-none placeholder:text-slate-500 focus-visible:ring-0"
+                      autoFocus
+                      aria-label="분석 주소"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={!query.trim()}
+                    className="h-12 rounded-xl bg-cyan-300 px-6 text-slate-950 hover:bg-cyan-200 disabled:opacity-50"
+                  >
+                    <Sparkles className="mr-1 size-4" />
+                    분석 시작
+                  </Button>
+                </div>
+              </form>
+              <p className="mt-4 text-xs text-slate-600">
+                예: 서울특별시 강남구 역삼동 123-45
+              </p>
+            </div>
+          </div>
+        )}
+
         {status === 'loading' && (
           <div className="grid min-h-[calc(100vh-64px)] place-items-center px-6">
             <div className="text-center">
@@ -278,9 +406,15 @@ export function AnalysisWorkspace() {
                     </div>
                     <Badge
                       variant="outline"
-                      className="border-cyan-300/20 bg-cyan-300/8 text-cyan-200"
+                      className={
+                        result.meta.mode === 'live'
+                          ? 'border-lime-300/20 bg-lime-300/8 text-lime-200'
+                          : result.meta.mode === 'hybrid'
+                            ? 'border-amber-300/20 bg-amber-300/8 text-amber-200'
+                            : 'border-cyan-300/20 bg-cyan-300/8 text-cyan-200'
+                      }
                     >
-                      MOCK
+                      {result.meta.mode === 'live' ? 'LIVE' : result.meta.mode === 'hybrid' ? 'HYBRID' : 'PREVIEW'}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -288,7 +422,7 @@ export function AnalysisWorkspace() {
                   <Metric
                     icon={Ruler}
                     label="대지면적"
-                    value={`${result.data.geometry.areaSqm.value?.toLocaleString('ko-KR')}㎡`}
+                    value={result.data.geometry.areaSqm.value != null ? `${result.data.geometry.areaSqm.value.toLocaleString('ko-KR')}㎡` : '-'}
                   />
                   <Metric
                     icon={Building2}
@@ -298,12 +432,12 @@ export function AnalysisWorkspace() {
                   <Metric
                     icon={MapPinned}
                     label="도로 폭"
-                    value={`약 ${result.data.geometry.roadWidthM.value}m`}
+                    value={result.data.geometry.roadWidthM.value != null ? `약 ${result.data.geometry.roadWidthM.value}m` : '미확인'}
                   />
                   <Metric
                     icon={TrendingUp}
                     label="경사"
-                    value={`${result.data.geometry.slopePercent.value}%`}
+                    value={result.data.geometry.slopePercent.value != null ? `${result.data.geometry.slopePercent.value}%` : '미확인'}
                   />
                 </CardContent>
               </Card>
@@ -334,13 +468,67 @@ export function AnalysisWorkspace() {
                   ))}
                 </CardContent>
               </Card>
+              {sunlightStatus === 'loading' && (
+                <Card className="border border-white/8 bg-white/[0.035] text-white">
+                  <CardContent className="flex items-center gap-3 py-4">
+                    <LoaderCircle className="size-4 animate-spin text-amber-300" />
+                    <span className="text-xs text-slate-400">일조 분석 중...</span>
+                  </CardContent>
+                </Card>
+              )}
+              {sunlightStatus === 'ready' && sunlight && (
+                <Card className="border border-white/8 bg-white/[0.035] text-white">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <Sun className="size-4 text-amber-300" />
+                      일조 분석 (사전검토용)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="rounded-xl border border-white/8 bg-black/10 p-3">
+                      <p className="text-[10px] text-slate-500">동지 (12/22)</p>
+                      <p className="mt-1 text-sm text-slate-200">
+                        {sunlight.winterSolstice.sunrise} ~ {sunlight.winterSolstice.sunset}
+                      </p>
+                      <p className="text-xs text-slate-400">{sunlight.winterSolstice.daylightHours}시간</p>
+                    </div>
+                    <div className="rounded-xl border border-white/8 bg-black/10 p-3">
+                      <p className="text-[10px] text-slate-500">하지 (6/21)</p>
+                      <p className="mt-1 text-sm text-slate-200">
+                        {sunlight.summerSolstice.sunrise} ~ {sunlight.summerSolstice.sunset}
+                      </p>
+                      <p className="text-xs text-slate-400">{sunlight.summerSolstice.daylightHours}시간</p>
+                    </div>
+                    <div className="rounded-xl border border-white/8 bg-black/10 p-3">
+                      <p className="text-[10px] text-slate-500">춘분 (3/20)</p>
+                      <p className="mt-1 text-sm text-slate-200">
+                        {sunlight.equinox.sunrise} ~ {sunlight.equinox.sunset}
+                      </p>
+                      <p className="text-xs text-slate-400">{sunlight.equinox.daylightHours}시간</p>
+                    </div>
+                    <SummaryRow
+                      label="연간 일조시간 (추정)"
+                      value={`${sunlight.annualSunlightHoursEstimate.toLocaleString('ko-KR')}시간`}
+                    />
+                    <p className="text-[9px] leading-4 text-slate-600">{sunlight.disclaimer}</p>
+                  </CardContent>
+                </Card>
+              )}
             </aside>
 
             <section className="analysis-scene-frame min-h-[620px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/30">
               <div className="relative h-[520px] xl:h-[calc(100vh-205px)] xl:min-h-[620px]">
                 {sceneMode === 'massing' ? (
-                  <LazyParcelScene
+                  <LazyAnalysisScene
                     address={address}
+                    center={
+                      result.data.identity.center.value ?? {
+                        latitude: 37.5446,
+                        longitude: 127.0558,
+                      }
+                    }
+                    boundary={result.data.geometry.boundary}
+                    areaSqm={result.data.geometry.areaSqm.value ?? 500}
                     scenario={scenario}
                     context={result.data.context}
                   />
@@ -450,19 +638,19 @@ export function AnalysisWorkspace() {
                 <CardContent className="space-y-3">
                   <SummaryRow
                     label="공시지가"
-                    value={`${formatKrw(result.data.market.officialLandPricePerSqm.value ?? 0)}/㎡`}
+                    value={result.data.market.officialLandPricePerSqm.value ? `${formatKrw(result.data.market.officialLandPricePerSqm.value)}/㎡` : '미연결'}
                   />
                   <SummaryRow
                     label="유사사례 중앙값"
-                    value={`${formatKrw(result.data.market.comparableMedianPerSqm.value ?? 0)}/㎡`}
+                    value={result.data.market.comparableMedianPerSqm.value ? `${formatKrw(result.data.market.comparableMedianPerSqm.value)}/㎡` : '미연결'}
                   />
                   <SummaryRow
                     label="비교 표본"
-                    value={`${result.data.market.comparableCount.value}건`}
+                    value={result.data.market.comparableCount.value != null ? `${result.data.market.comparableCount.value}건` : '-'}
                   />
                   <SummaryRow
                     label="12개월 추세"
-                    value={`+${result.data.market.trendPercent.value}%`}
+                    value={result.data.market.trendPercent.value != null ? `${result.data.market.trendPercent.value > 0 ? '+' : ''}${result.data.market.trendPercent.value}%` : '미연결'}
                   />
                 </CardContent>
               </Card>
@@ -498,6 +686,39 @@ export function AnalysisWorkspace() {
                   </button>
                 </CardContent>
               </Card>
+
+              <Button
+                onClick={saveToDb}
+                disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.07] py-3 text-sm text-cyan-200 transition hover:bg-cyan-300/[0.12] disabled:opacity-60"
+              >
+                {saveStatus === 'saving' ? (
+                  <><LoaderCircle className="size-4 animate-spin" /> 저장 중...</>
+                ) : saveStatus === 'saved' ? (
+                  <><CheckCircle2 className="size-4 text-lime-300" /> 저장 완료</>
+                ) : saveStatus === 'error' ? (
+                  <><Save className="size-4" /> 다시 저장 (로그인 필요)</>
+                ) : (
+                  <><Save className="size-4" /> 분석 결과 저장</>
+                )}
+              </Button>
+
+              <Button
+                onClick={exportBlender}
+                disabled={!savedAnalysisId || exportStatus === 'submitting' || exportStatus === 'submitted'}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] disabled:opacity-50"
+              >
+                {exportStatus === 'submitting' ? (
+                  <><LoaderCircle className="size-4 animate-spin" /> 모델링 요청 중...</>
+                ) : exportStatus === 'submitted' ? (
+                  <><CheckCircle2 className="size-4 text-lime-300" /> 모델링 작업 시작됨</>
+                ) : (
+                  <><Box className="size-4" /> 3D 모델 내보내기 (Blender)</>
+                )}
+              </Button>
+              {!savedAnalysisId && exportStatus === 'error' && (
+                <p className="px-1 text-xs text-amber-300">먼저 분석 결과를 저장해 주세요.</p>
+              )}
 
               <Link
                 href={`/report?address=${encodeURIComponent(address)}`}

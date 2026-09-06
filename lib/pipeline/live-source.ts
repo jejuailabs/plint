@@ -19,6 +19,10 @@ import { createLandTransactionConnector } from '@/lib/external-apis/connectors/l
 import type { LandTransactionOutput } from '@/lib/external-apis/connectors/land-transaction';
 import { createKmaWeatherConnector } from '@/lib/external-apis/connectors/kma-weather';
 import type { KmaWeatherOutput } from '@/lib/external-apis/connectors/kma-weather';
+import { createLandUsePlanConnector } from '@/lib/external-apis/connectors/land-use-plan';
+import type { LandUsePlanOutput } from '@/lib/external-apis/connectors/land-use-plan';
+import { createCadastralBoundaryConnector } from '@/lib/external-apis/connectors/cadastral-boundary';
+import type { CadastralBoundaryOutput } from '@/lib/external-apis/connectors/cadastral-boundary';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,6 +34,8 @@ export type LiveSourceData = {
   landPrice: ConnectorResult<LandPriceOutput>;
   transactions: ConnectorResult<LandTransactionOutput>;
   weather: ConnectorResult<KmaWeatherOutput>;
+  landUsePlan: ConnectorResult<LandUsePlanOutput>;
+  cadastralBoundary: ConnectorResult<CadastralBoundaryOutput>;
   pnuCode: string | null;
   adminCode: string | null;
   warnings: string[];
@@ -111,6 +117,8 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
       landPrice: emptyResult<LandPriceOutput>(skip),
       transactions: emptyResult<LandTransactionOutput>(skip),
       weather: emptyResult<KmaWeatherOutput>(skip),
+      landUsePlan: emptyResult<LandUsePlanOutput>(skip),
+      cadastralBoundary: emptyResult<CadastralBoundaryOutput>(skip),
       pnuCode: null,
       adminCode: null,
       warnings: [...juso.warnings, '주소 해석 실패로 후속 조회를 건너뛰었습니다.'],
@@ -135,22 +143,25 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
   const stnId = ADMIN_TO_STATION[adminCode.slice(0, 2)] ?? '108';
 
   // Step 3: parallel downstream calls
-  const [bldg, price, tx, wx] = await Promise.allSettled([
+  const [bldg, price, tx, wx, lup, cad] = await Promise.allSettled([
     createBuildingLedgerConnector().execute({ sigunguCode, bjdongCode, bun, ji }),
     createLandPriceConnector().execute({ pnuCode: pnu }),
     createLandTransactionConnector().execute({ lawdCode: sigunguCode, dealYearMonth: dealYM }),
     createKmaWeatherConnector().execute({ stationId: stnId, startDate: `${lastYear}0101`, endDate: `${lastYear}1231` }),
+    createLandUsePlanConnector().execute({ pnuCode: pnu }),
+    createCadastralBoundaryConnector().execute({ pnuCode: pnu }),
   ]);
 
   const building = unwrapSettled(bldg, '건축물대장 조회 실패');
   const landPrice = unwrapSettled(price, '공시지가 조회 실패');
   const transactions = unwrapSettled(tx, '실거래가 조회 실패');
   const weather = unwrapSettled(wx, '기상 조회 실패');
+  const landUsePlan = unwrapSettled(lup, '토지이용계획 조회 실패');
+  const cadastralBoundary = unwrapSettled(cad, '연속지적도 조회 실패');
 
-  // Collect per-connector warnings for failed lookups
-  for (const r of [building, landPrice, transactions, weather]) {
+  for (const r of [building, landPrice, transactions, weather, landUsePlan, cadastralBoundary]) {
     if (!r.data && r.warnings.length) warnings.push(...r.warnings);
   }
 
-  return { juso, building, landPrice, transactions, weather, pnuCode: pnu, adminCode, warnings };
+  return { juso, building, landPrice, transactions, weather, landUsePlan, cadastralBoundary, pnuCode: pnu, adminCode, warnings };
 }

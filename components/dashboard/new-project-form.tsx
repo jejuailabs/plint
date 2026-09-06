@@ -1,28 +1,24 @@
 'use client';
 
-import { ArrowRight, LoaderCircle, MapPin } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { type SyntheticEvent, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { AddressSearch, type AddressResult } from '@/components/address-search';
 
 export function NewProjectForm() {
   const router = useRouter();
-  const [address, setAddress] = useState('');
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const normalized = address.trim();
+  const handleSelect = useCallback(async (result: AddressResult) => {
+    const normalized = (result.jibunAddress || result.roadAddress).trim();
     if (!normalized) return;
 
     setIsPending(true);
     setErrorMessage(null);
 
     try {
-      // Create site
       const siteRes = await fetch('/api/sites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,7 +32,6 @@ export function NewProjectForm() {
 
       const { data: site } = await siteRes.json() as { data: { id: string } };
 
-      // Start analysis
       const analysisRes = await fetch('/api/analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,46 +49,29 @@ export function NewProjectForm() {
       setErrorMessage(err instanceof Error ? err.message : '오류가 발생했습니다.');
       setIsPending(false);
     }
-  }
+  }, [router]);
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-xl">
+    <div className="mx-auto w-full max-w-xl">
       <div className="rounded-2xl border border-white/12 bg-white/[0.065] p-2 shadow-[0_24px_90px_rgba(0,0,0,.32)] backdrop-blur-xl">
-        <label className="sr-only" htmlFor="new-project-address">지번 또는 도로명주소</label>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="flex flex-1 items-center gap-2 px-2">
-            <MapPin className="size-4 shrink-0 text-cyan-300" />
-            <Input
-              id="new-project-address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="지번 또는 도로명주소를 입력하세요"
-              className="h-12 flex-1 border-0 bg-transparent px-2 text-[15px] text-white shadow-none placeholder:text-slate-500 focus-visible:ring-0"
-              disabled={isPending}
-            />
+        {isPending ? (
+          <div className="flex h-12 items-center justify-center gap-2 text-sm text-slate-300">
+            <LoaderCircle className="size-4 animate-spin text-cyan-300" />
+            분석을 시작하고 있습니다…
           </div>
-          <Button
-            type="submit"
-            disabled={isPending || !address.trim()}
-            className="h-12 rounded-xl bg-lime-300 px-6 text-slate-950 hover:bg-lime-200 disabled:opacity-50"
-          >
-            {isPending ? (
-              <LoaderCircle className="mr-1 size-4 animate-spin" />
-            ) : (
-              <ArrowRight className="mr-1 size-4" />
-            )}
-            분석 시작
-          </Button>
-        </div>
+        ) : (
+          <AddressSearch
+            onSelect={handleSelect}
+            placeholder="도로명, 지번, 건물명으로 검색"
+            disabled={isPending}
+          />
+        )}
       </div>
       {errorMessage ? (
         <p role="alert" className="mt-4 text-center text-sm text-rose-300">
           {errorMessage}
         </p>
       ) : null}
-      <p className="mt-4 text-center text-xs text-slate-600">
-        예: 서울특별시 성동구 성수동2가 277-17
-      </p>
-    </form>
+    </div>
   );
 }

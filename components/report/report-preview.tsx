@@ -4,14 +4,17 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Bot,
   Building2,
   Check,
   ChevronRight,
   Download,
   FileChartColumnIncreasing,
+  FileSpreadsheet,
   LoaderCircle,
   LockKeyhole,
   MapPinned,
+  Printer,
   ShieldCheck,
   Sparkles,
   TrendingUp,
@@ -32,7 +35,17 @@ import {
 import type { AnalysisPreviewResponse } from '@/lib/domain/parcel-intelligence';
 import type { Fact } from '@/lib/domain/evidence';
 
-const fallbackAddress = '제주특별자치도 제주시 연동 273-15';
+type AIReportSection = { title: string; body: string };
+type AIReport = {
+  summary: string;
+  feasibility: AIReportSection;
+  regulations: AIReportSection;
+  market: AIReportSection;
+  risks: AIReportSection;
+  recommendation: AIReportSection;
+  generatedAt: string;
+  model: string;
+};
 
 function formatKrw(value: number) {
   if (value >= 100_000_000) return `${(value / 100_000_000).toFixed(1)}억원`;
@@ -51,12 +64,67 @@ function confidenceLabel(fact: Fact<unknown>) {
 }
 
 export function ReportPreview() {
-  const [address, setAddress] = useState(fallbackAddress);
+  const [address, setAddress] = useState('');
   const [result, setResult] = useState<AnalysisPreviewResponse | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
-    'loading',
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+    'idle',
   );
+  const [aiReport, setAiReport] = useState<AIReport | null>(null);
+  const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadExcel = useCallback(async () => {
+    if (!result) return;
+    setDownloading(true);
+    try {
+      const res = await fetch('/api/analysis/report/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: result.data,
+          aiReport: aiReport ?? null,
+          address,
+          format: 'excel',
+        }),
+      });
+      if (!res.ok) throw new Error('다운로드 실패');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PLINT_분석보고서_${address.replace(/\s+/g, '_').slice(0, 30)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('보고서 다운로드에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      setDownloading(false);
+    }
+  }, [result, aiReport, address]);
+
+  const printReport = useCallback(() => {
+    window.print();
+  }, []);
+
+  const fetchAIReport = useCallback(async (data: AnalysisPreviewResponse['data']) => {
+    setAiStatus('loading');
+    try {
+      const res = await fetch('/api/analysis/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
+      });
+      if (!res.ok) throw new Error('AI 보고서 생성 실패');
+      const report = (await res.json()) as AIReport;
+      setAiReport(report);
+      setAiStatus('ready');
+    } catch {
+      setAiStatus('error');
+    }
+  }, []);
 
   const analyze = useCallback(async (nextAddress: string) => {
     setStatus('loading');
@@ -71,15 +139,16 @@ export function ReportPreview() {
         throw new Error('리포트 미리보기를 생성하지 못했습니다.');
       setResult(payload);
       setStatus('ready');
+      void fetchAIReport(payload.data);
     } catch {
       setStatus('error');
     }
-  }, []);
+  }, [fetchAIReport]);
 
   useEffect(() => {
     const initial =
-      new URLSearchParams(window.location.search).get('address')?.trim() ||
-      fallbackAddress;
+      new URLSearchParams(window.location.search).get('address')?.trim();
+    if (!initial) return;
     setAddress(initial);
     void analyze(initial);
   }, [analyze]);
@@ -91,6 +160,7 @@ export function ReportPreview() {
     [result],
   );
 
+  if (status === 'idle') return <ErrorReport address="" />;
   if (status === 'loading') return <LoadingReport />;
   if (status === 'error' || !result || !scenario)
     return <ErrorReport address={address} />;
@@ -134,11 +204,20 @@ export function ReportPreview() {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button
-              onClick={() => setPaywallOpen(true)}
-              className="h-9 bg-lime-300 px-3 text-xs text-slate-950 hover:bg-lime-200 sm:px-4"
+              onClick={printReport}
+              variant="outline"
+              className="h-9 border-white/15 px-3 text-xs text-slate-200 hover:bg-white/10 sm:px-4 print:hidden"
             >
-              <Download className="size-3.5" />{' '}
-              <span className="hidden sm:inline">전체 보고서</span>
+              <Printer className="size-3.5" />{' '}
+              <span className="hidden sm:inline">PDF</span>
+            </Button>
+            <Button
+              onClick={downloadExcel}
+              disabled={downloading}
+              className="h-9 bg-lime-300 px-3 text-xs text-slate-950 hover:bg-lime-200 sm:px-4 print:hidden"
+            >
+              {downloading ? <LoaderCircle className="size-3.5 animate-spin" /> : <FileSpreadsheet className="size-3.5" />}{' '}
+              <span className="hidden sm:inline">Excel</span>
             </Button>
           </div>
         </div>
@@ -403,6 +482,57 @@ export function ReportPreview() {
             </div>
           </section>
 
+          <section className="border-b border-white/10 px-6 py-9 sm:px-10 lg:px-14 lg:py-12">
+            <SectionHeading
+              eyebrow="05 / AI analysis"
+              title="AI 개발 타당성 분석"
+            />
+            {aiStatus === 'loading' && (
+              <div className="mt-7 flex items-center gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-6">
+                <LoaderCircle className="size-5 animate-spin text-cyan-300" />
+                <div>
+                  <p className="text-sm text-slate-200">AI가 분석 중입니다</p>
+                  <p className="mt-1 text-xs text-slate-500">필지 데이터를 기반으로 개발 타당성 보고서를 생성하고 있습니다.</p>
+                </div>
+              </div>
+            )}
+            {aiStatus === 'error' && (
+              <div className="mt-7 flex items-center gap-3 rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-6">
+                <AlertTriangle className="size-5 text-amber-300" />
+                <div>
+                  <p className="text-sm text-slate-200">AI 분석을 완료하지 못했습니다</p>
+                  <p className="mt-1 text-xs text-slate-500">네트워크 상태를 확인하고 다시 시도해 주세요.</p>
+                </div>
+              </div>
+            )}
+            {aiStatus === 'ready' && aiReport && (
+              <div className="mt-7 space-y-6">
+                <div className="rounded-2xl border border-lime-300/20 bg-lime-300/[0.06] p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <Bot className="mt-0.5 size-5 shrink-0 text-lime-200" />
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-lime-200">Executive summary</p>
+                      <p className="mt-3 text-sm leading-7 text-slate-200">{aiReport.summary}</p>
+                    </div>
+                  </div>
+                </div>
+                {([aiReport.feasibility, aiReport.regulations, aiReport.market, aiReport.risks, aiReport.recommendation] as AIReportSection[]).filter(Boolean).map((section) => (
+                  <div key={section.title} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 sm:p-6">
+                    <h3 className="text-sm font-medium text-cyan-100">{section.title}</h3>
+                    <div className="mt-3 space-y-3 text-sm leading-7 text-slate-300">
+                      {(section.body ?? '').replace(/\\n\\n/g, '\n\n').replace(/\\n/g, '\n').split('\n\n').map((paragraph, i) => (
+                        <p key={i}>{paragraph}</p>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <p className="text-[10px] text-slate-500">
+                  AI 모델: {aiReport.model} · 생성: {new Date(aiReport.generatedAt).toLocaleString('ko-KR')} · 본 분석은 사전검토용이며 인허가 심의를 대체하지 않습니다.
+                </p>
+              </div>
+            )}
+          </section>
+
           <section className="report-unlock relative overflow-hidden px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_0%,rgba(34,211,238,.13),transparent_34%)]" />
             <div className="relative grid gap-8 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
@@ -417,7 +547,7 @@ export function ReportPreview() {
                 </h2>
                 <p className="mt-4 max-w-xl text-sm leading-7 text-slate-400">
                   PDF, Excel 원천데이터, 상세 법규 검토, 상권·수요 분석, 투자비
-                  민감도, 3D GLB·SketchUp 산출물을 하나의 패키지로 제공합니다.
+                  민감도, 3D 매스 뷰어를 하나의 패키지로 제공합니다.
                 </p>
               </div>
               <div className="rounded-2xl border border-lime-300/20 bg-lime-300/[0.06] p-6">
@@ -426,7 +556,7 @@ export function ReportPreview() {
                     '표지·의사결정 요약 PDF',
                     '법규·시장·상권 근거 부록',
                     '수익성·민감도 Excel',
-                    '3D GLB / SketchUp 산출물',
+                    '3D 매스 모델 뷰어',
                   ].map((item) => (
                     <p
                       key={item}
@@ -437,19 +567,29 @@ export function ReportPreview() {
                     </p>
                   ))}
                 </div>
-                <Button
-                  onClick={() => setPaywallOpen(true)}
-                  className="mt-7 h-11 w-full bg-lime-300 text-slate-950 hover:bg-lime-200"
-                >
-                  전체 보고서 잠금 해제 <ArrowRight />
-                </Button>
+                <div className="mt-7 grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={printReport}
+                    variant="outline"
+                    className="h-11 border-white/15 text-slate-200 hover:bg-white/10"
+                  >
+                    <Printer className="size-4" /> PDF 저장
+                  </Button>
+                  <Button
+                    onClick={downloadExcel}
+                    disabled={downloading}
+                    className="h-11 bg-lime-300 text-slate-950 hover:bg-lime-200"
+                  >
+                    {downloading ? <LoaderCircle className="size-4 animate-spin" /> : <FileSpreadsheet className="size-4" />} Excel 다운로드
+                  </Button>
+                </div>
               </div>
             </div>
           </section>
         </div>
         <p className="mx-auto mt-4 max-w-[1480px] px-2 text-[10px] leading-5 text-slate-500">
           미리보기는 사전 검토용이며 현재{' '}
-          {meta.mode === 'mock' ? '샘플 데이터' : '연결 데이터'}를 포함합니다.
+          {meta.mode === 'mock' ? '샘플 데이터' : meta.mode === 'live' ? '실시간 데이터' : '연결 데이터'}를 포함합니다.
           인허가, 감정평가, 설계도서 또는 전문 용역을 대체하지 않습니다.
         </p>
       </div>

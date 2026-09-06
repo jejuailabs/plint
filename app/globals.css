@@ -449,3 +449,17 @@ html[data-theme='light'] .auth-modal .text-slate-500 {
     @apply font-sans;
   }
 }
+
+@media print {
+  body { background: white !important; color: #111 !important; }
+  .site-shell { min-height: auto !important; }
+  .analysis-header, .report-unlock, .auth-modal, .print\\:hidden { display: none !important; }
+  .report-paper { border: none !important; background: white !important; box-shadow: none !important; border-radius: 0 !important; }
+  .report-cover { background: #f8fafc !important; border-bottom: 1px solid #e2e8f0 !important; }
+  .report-recommendation { border-color: #86efac !important; background: #f0fdf4 !important; }
+  .report-model-canvas { display: none !important; }
+  section { break-inside: avoid; }
+  * { color: #1e293b !important; }
+  h1, h2, h3, p.font-medium, p.font-semibold { color: #0f172a !important; }
+  .text-cyan-200, .text-cyan-100, .text-lime-200, .text-lime-300 { color: #0f766e !important; }
+}

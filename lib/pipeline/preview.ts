@@ -167,6 +167,32 @@ function approxBoundary(lat: number, lon: number, areaSqm: number): Polygon {
   };
 }
 
+/** Map Korean zoning name to building-coverage / floor-area-ratio limits. */
+function zoningLimits(zoneName: string | null): { buildingCoverageLimit: number; floorAreaRatioLimit: number } {
+  if (!zoneName) return { buildingCoverageLimit: 60, floorAreaRatioLimit: 200 };
+  if (zoneName.includes('전용주거')) return zoneName.includes('1종') ? { buildingCoverageLimit: 50, floorAreaRatioLimit: 100 } : { buildingCoverageLimit: 50, floorAreaRatioLimit: 150 };
+  if (zoneName.includes('일반주거')) {
+    if (zoneName.includes('1종')) return { buildingCoverageLimit: 60, floorAreaRatioLimit: 200 };
+    if (zoneName.includes('2종')) return { buildingCoverageLimit: 60, floorAreaRatioLimit: 250 };
+    if (zoneName.includes('3종')) return { buildingCoverageLimit: 50, floorAreaRatioLimit: 300 };
+  }
+  if (zoneName.includes('준주거')) return { buildingCoverageLimit: 70, floorAreaRatioLimit: 500 };
+  if (zoneName.includes('중심상업')) return { buildingCoverageLimit: 90, floorAreaRatioLimit: 1500 };
+  if (zoneName.includes('일반상업')) return { buildingCoverageLimit: 80, floorAreaRatioLimit: 1300 };
+  if (zoneName.includes('근린상업')) return { buildingCoverageLimit: 70, floorAreaRatioLimit: 900 };
+  if (zoneName.includes('유통상업')) return { buildingCoverageLimit: 80, floorAreaRatioLimit: 1100 };
+  if (zoneName.includes('전용공업')) return { buildingCoverageLimit: 70, floorAreaRatioLimit: 300 };
+  if (zoneName.includes('일반공업')) return { buildingCoverageLimit: 70, floorAreaRatioLimit: 350 };
+  if (zoneName.includes('준공업')) return { buildingCoverageLimit: 70, floorAreaRatioLimit: 400 };
+  if (zoneName.includes('보전녹지')) return { buildingCoverageLimit: 20, floorAreaRatioLimit: 80 };
+  if (zoneName.includes('생산녹지')) return { buildingCoverageLimit: 20, floorAreaRatioLimit: 100 };
+  if (zoneName.includes('자연녹지')) return { buildingCoverageLimit: 20, floorAreaRatioLimit: 100 };
+  if (zoneName.includes('보전관리')) return { buildingCoverageLimit: 20, floorAreaRatioLimit: 80 };
+  if (zoneName.includes('생산관리')) return { buildingCoverageLimit: 20, floorAreaRatioLimit: 80 };
+  if (zoneName.includes('계획관리')) return { buildingCoverageLimit: 40, floorAreaRatioLimit: 100 };
+  return { buildingCoverageLimit: 60, floorAreaRatioLimit: 200 };
+}
+
 /** Map Korean land-slope code to approximate percent. */
 function slopeFromCode(code: string | null): number | null {
   if (!code) return null;
@@ -191,23 +217,30 @@ async function runLivePreview(address: string): Promise<AnalysisPreviewResponse>
   const priceData = src.landPrice.data;
   const txData = src.transactions.data;
   const wxData = src.weather.data;
+  const lupData = src.landUsePlan.data;
+  const cadData = src.cadastralBoundary.data;
 
   // Evidence shorthand — returns [] when the connector produced no data.
   const ev = (id: string, r: { data: unknown; rawSnapshotId: string; observedAt: string }, c?: Evidence['confidence']) =>
     r.data ? [liveEvidence(id, r, c)] : [];
 
-  // Estimate parcel area from building data when available.
+  // Parcel area: prefer cadastral → building ledger estimate → default
   let estimatedArea = 500;
-  if (bldgData?.exists && bldgData.totalFloorAreaSqm && bldgData.floorsAbove && bldgData.floorsAbove > 0) {
+  let areaSource: 'cadastral' | 'building-estimate' | 'default' = 'default';
+  if (cadData?.areaSqm != null && cadData.areaSqm > 0) {
+    estimatedArea = Math.round(cadData.areaSqm);
+    areaSource = 'cadastral';
+  } else if (bldgData?.exists && bldgData.totalFloorAreaSqm && bldgData.floorsAbove && bldgData.floorsAbove > 0) {
     estimatedArea = Math.round((bldgData.totalFloorAreaSqm / bldgData.floorsAbove) / 0.55);
+    areaSource = 'building-estimate';
   }
 
   const officialPrice = priceData?.officialPricePerSqm ?? 0;
   const compMedian = txData ? medianPricePerSqm(txData) : 0;
   const compCount = txData?.filter((t) => t.areaSqm > 0).length ?? 0;
 
-  const buildingCoverageLimit = 60;
-  const floorAreaRatioLimit = 200;
+  // Determine zoning limits from land-use-plan or fallback
+  const { buildingCoverageLimit, floorAreaRatioLimit } = zoningLimits(lupData?.primaryZone?.name ?? null);
 
   const scenarios = calculateScenarios({
     areaSqm: estimatedArea,
@@ -229,17 +262,23 @@ async function runLivePreview(address: string): Promise<AnalysisPreviewResponse>
       center: fact({ latitude: lat, longitude: lon }, ev('juso-coordinate', src.juso)),
     },
 
-    // -- geometry (cadastral WFS not yet connected — estimated) ---------------
     geometry: {
-      areaSqm: fact(estimatedArea, [], {
-        derivation: 'building-footprint-estimate:v1',
-        warnings: ['연속지적도 연결 전 건축물대장 기반 추정값입니다.'],
-      }),
+      areaSqm: fact(
+        estimatedArea,
+        areaSource === 'cadastral' ? ev('continuous-cadastral', src.cadastralBoundary, 'verified') : [],
+        areaSource === 'cadastral'
+          ? undefined
+          : areaSource === 'building-estimate'
+            ? { derivation: 'building-footprint-estimate:v1', warnings: ['건축물대장 기반 추정값입니다.'] }
+            : { warnings: ['면적 정보 미확인 — 기본값 사용'] },
+      ),
       landCategory: fact('대', [], { warnings: ['토지이용계획 연결 전 기본값입니다.'] }),
-      boundary: fact(approxBoundary(lat, lon, estimatedArea), [], {
-        warnings: ['연속지적도 연결 전 좌표 기반 근사 경계입니다.'],
-      }),
-      frontageM: fact<number>(null, [], { warnings: ['연속지적도·도로 데이터 연결 전 산출 불가'] }),
+      boundary: cadData
+        ? fact({ type: 'Polygon' as const, coordinates: cadData.coordinates }, ev('continuous-cadastral', src.cadastralBoundary, 'verified'))
+        : fact(approxBoundary(lat, lon, estimatedArea), [], {
+            warnings: ['연속지적도 조회 실패 — 좌표 기반 근사 경계입니다.'],
+          }),
+      frontageM: fact<number>(null, [], { warnings: ['도로 데이터 연결 전 산출 불가'] }),
       roadWidthM: fact<number>(null, [], { warnings: ['도로 데이터 연결 전 산출 불가'] }),
       slopePercent: fact(
         slopeFromCode(priceData?.slopeCode ?? null),
@@ -248,18 +287,40 @@ async function runLivePreview(address: string): Promise<AnalysisPreviewResponse>
       ),
     },
 
-    // -- planning (land-use-plan not yet connected) --------------------------
+    // -- planning (from land-use-plan + defaults) ----------------------------
     planning: [
+      ...(lupData?.primaryZone
+        ? [{
+            code: lupData.primaryZone.code,
+            name: lupData.primaryZone.name,
+            category: 'zoning' as const,
+            status: 'confirmed' as const,
+            summary: fact(
+              `건폐율 ${buildingCoverageLimit}% · 용적률 ${floorAreaRatioLimit}% 상한`,
+              ev('land-use-plan', src.landUsePlan, 'verified'),
+            ),
+          }]
+        : [{
+            code: 'UQA-PENDING',
+            name: '용도지역 확인 필요',
+            category: 'zoning' as const,
+            status: 'review_required' as const,
+            summary: fact(
+              `건폐율 ${buildingCoverageLimit}% · 용적률 ${floorAreaRatioLimit}% (기본값 적용)`,
+              [],
+              { warnings: ['토지이용계획 조회 실패 — 기본 용도지역 한도를 적용합니다.'] },
+            ),
+          }]
+      ),
+      ...(lupData?.zones.filter((z) => z.category === 'district').map((z) => ({
+        code: z.code,
+        name: z.name,
+        category: 'district' as const,
+        status: 'confirmed' as const,
+        summary: fact(z.name, ev('land-use-plan', src.landUsePlan, 'verified')),
+      })) ?? []),
       {
-        code: 'UQA-PENDING', name: '용도지역 확인 필요', category: 'zoning', status: 'review_required',
-        summary: fact(
-          `건폐율 ${buildingCoverageLimit}% · 용적률 ${floorAreaRatioLimit}% (기본값 적용)`,
-          [],
-          { warnings: ['토지이용계획 연결 전 기본 용도지역 한도를 적용합니다. 실제 용도지역에 따라 달라질 수 있습니다.'] },
-        ),
-      },
-      {
-        code: 'ROAD-ACCESS', name: '접도 검토', category: 'road', status: 'review_required',
+        code: 'ROAD-ACCESS', name: '접도 검토', category: 'road' as const, status: 'review_required' as const,
         summary: fact<string>(null, [], { warnings: ['도로 데이터 연결 전 접도 검토 불가'] }),
       },
     ],
@@ -338,7 +399,7 @@ async function runLivePreview(address: string): Promise<AnalysisPreviewResponse>
 
   // Determine mode: live if primary connectors returned data, hybrid if partial.
   const primaryOk = !!(jusoData && bldgData && priceData && txData);
-  const anyOk = !!(jusoData || bldgData || priceData || txData || wxData);
+  const anyOk = !!(jusoData || bldgData || priceData || txData || wxData || cadData);
 
   return {
     data,
