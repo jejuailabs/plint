@@ -16,7 +16,7 @@ import type { BuildingLedgerOutput } from '@/lib/external-apis/connectors/buildi
 import { createLandPriceConnector } from '@/lib/external-apis/connectors/land-price';
 import type { LandPriceOutput } from '@/lib/external-apis/connectors/land-price';
 import { createLandTransactionConnector } from '@/lib/external-apis/connectors/land-transaction';
-import type { LandTransactionOutput } from '@/lib/external-apis/connectors/land-transaction';
+import type { LandTransactionOutput, LandTransactionItem } from '@/lib/external-apis/connectors/land-transaction';
 import { createKmaWeatherConnector } from '@/lib/external-apis/connectors/kma-weather';
 import type { KmaWeatherOutput } from '@/lib/external-apis/connectors/kma-weather';
 import { createLandUsePlanConnector } from '@/lib/external-apis/connectors/land-use-plan';
@@ -133,31 +133,52 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
   const bun = pnu.slice(11, 15);
   const ji = pnu.slice(15, 19);
 
-  // Transaction query: previous month
+  // Transaction query: last 6 months for better coverage
   const now = new Date();
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const dealYM = `${prev.getFullYear()}${String(prev.getMonth() + 1).padStart(2, '0')}`;
+  const txMonths: string[] = [];
+  for (let i = 1; i <= 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    txMonths.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
 
   // Weather query: previous full year, nearest station
   const lastYear = now.getFullYear() - 1;
   const stnId = ADMIN_TO_STATION[adminCode.slice(0, 2)] ?? '108';
 
-  // Step 3: parallel downstream calls
-  const [bldg, price, tx, wx, lup, cad] = await Promise.allSettled([
+  // Step 3: parallel downstream calls (transactions query 6 months)
+  const txConnector = createLandTransactionConnector();
+  const [bldg, price, wx, lup, cad, ...txSettled] = await Promise.allSettled([
     createBuildingLedgerConnector().execute({ sigunguCode, bjdongCode, bun, ji }),
     createLandPriceConnector().execute({ pnuCode: pnu }),
-    createLandTransactionConnector().execute({ lawdCode: sigunguCode, dealYearMonth: dealYM }),
     createKmaWeatherConnector().execute({ stationId: stnId, startDate: `${lastYear}0101`, endDate: `${lastYear}1231` }),
     createLandUsePlanConnector().execute({ pnuCode: pnu }),
     createCadastralBoundaryConnector().execute({ pnuCode: pnu }),
+    ...txMonths.map((ym) => txConnector.execute({ lawdCode: sigunguCode, dealYearMonth: ym })),
   ]);
 
   const building = unwrapSettled(bldg, '건축물대장 조회 실패');
   const landPrice = unwrapSettled(price, '공시지가 조회 실패');
-  const transactions = unwrapSettled(tx, '실거래가 조회 실패');
   const weather = unwrapSettled(wx, '기상 조회 실패');
   const landUsePlan = unwrapSettled(lup, '토지이용계획 조회 실패');
   const cadastralBoundary = unwrapSettled(cad, '연속지적도 조회 실패');
+
+  // Merge 6 months of transactions into a single result
+  const allTxItems: LandTransactionItem[] = [];
+  let txSnapshot = `landtx-merged-${Date.now()}`;
+  let txObserved = new Date().toISOString();
+  const txWarnings: string[] = [];
+  for (const settled of txSettled) {
+    const r = unwrapSettled<LandTransactionOutput>(settled, '실거래가 조회 실패');
+    if (r.data) {
+      allTxItems.push(...r.data);
+      txSnapshot = r.rawSnapshotId;
+      txObserved = r.observedAt;
+    }
+    if (r.warnings.length) txWarnings.push(...r.warnings);
+  }
+  const transactions: ConnectorResult<LandTransactionOutput> = allTxItems.length > 0
+    ? { data: allTxItems, rawSnapshotId: txSnapshot, observedAt: txObserved, warnings: txWarnings }
+    : { data: null, rawSnapshotId: txSnapshot, observedAt: txObserved, warnings: txWarnings.length ? txWarnings : ['6개월간 거래 내역 없음'] };
 
   for (const r of [building, landPrice, transactions, weather, landUsePlan, cadastralBoundary]) {
     if (!r.data && r.warnings.length) warnings.push(...r.warnings);

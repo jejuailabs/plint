@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, DatabaseZap, Layers3, ShieldCheck } from 'lucide-react';
+import { ArrowRight, DatabaseZap, Layers3, MapPin, ShieldCheck, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { AddressSearch, type AddressResult } from '@/components/address-search';
@@ -20,11 +20,23 @@ export default function Home() {
   const [selectedAddress, setSelectedAddress] = useState('');
   const [submittedAddress, setSubmittedAddress] = useState('');
 
+  const [pendingResult, setPendingResult] = useState<AddressResult | null>(null);
+
   const handleAddressSelect = useCallback((result: AddressResult) => {
-    const addr = result.jibunAddress || result.roadAddress;
+    setPendingResult(result);
+  }, []);
+
+  const confirmAnalysis = useCallback(() => {
+    if (!pendingResult) return;
+    const addr = pendingResult.jibunAddress || pendingResult.roadAddress;
     setSelectedAddress(addr);
     setSubmittedAddress(addr);
+    setPendingResult(null);
     window.location.assign(`/analysis?address=${encodeURIComponent(addr)}`);
+  }, [pendingResult]);
+
+  const cancelConfirm = useCallback(() => {
+    setPendingResult(null);
   }, []);
 
   return (
@@ -104,6 +116,45 @@ export default function Home() {
         <div className="pointer-events-none absolute -left-36 top-1/4 size-[420px] rounded-full bg-cyan-500/10 blur-[120px]" />
         <div className="pointer-events-none absolute -right-44 bottom-0 size-[480px] rounded-full bg-blue-600/10 blur-[140px]" />
       </section>
+
+      {/* Address confirmation modal */}
+      {pendingResult && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm" onClick={cancelConfirm}>
+          <div className="mx-4 w-full max-w-md rounded-2xl border border-white/12 bg-[#0c1829] p-6 shadow-[0_40px_120px_rgba(0,0,0,.6)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">주소 확인</h3>
+              <button type="button" onClick={cancelConfirm} className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
+              <div className="flex gap-3">
+                <MapPin className="mt-0.5 size-4 shrink-0 text-cyan-300" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white">{pendingResult.roadAddress || pendingResult.jibunAddress}</p>
+                  {pendingResult.roadAddress && pendingResult.jibunAddress && (
+                    <p className="mt-1 text-xs text-slate-400">{pendingResult.jibunAddress}</p>
+                  )}
+                  {pendingResult.buildingName && (
+                    <p className="mt-1 text-xs text-cyan-200/70">{pendingResult.buildingName}</p>
+                  )}
+                  <p className="mt-1 text-[11px] text-slate-500">{pendingResult.zipCode}</p>
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-400">이 주소로 개발 사전검토 분석을 시작합니다.</p>
+            <div className="mt-5 flex gap-3">
+              <button type="button" onClick={cancelConfirm} className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] py-2.5 text-sm text-slate-300 hover:bg-white/[0.08]">
+                취소
+              </button>
+              <button type="button" onClick={confirmAnalysis} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-cyan-300 py-2.5 text-sm font-medium text-slate-950 hover:bg-cyan-200">
+                <Layers3 className="size-4" />
+                분석 시작
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

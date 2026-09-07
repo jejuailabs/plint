@@ -10,6 +10,7 @@ import {
   CircleDollarSign,
   Database,
   Download,
+  FileText,
   Globe2,
   Layers3,
   LoaderCircle,
@@ -23,8 +24,10 @@ import {
   Sparkles,
   Sun,
   TrendingUp,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { LazyAnalysisScene } from '@/components/analysis/lazy-analysis-scene';
@@ -82,6 +85,7 @@ function ScenarioButton({
 }
 
 export function AnalysisWorkspace() {
+  const router = useRouter();
   const [address, setAddress] = useState('');
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<AnalysisPreviewResponse | null>(null);
@@ -97,6 +101,7 @@ export function AnalysisWorkspace() {
   const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
   const [sunlight, setSunlight] = useState<SunlightData | null>(null);
   const [sunlightStatus, setSunlightStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [showReportConfirm, setShowReportConfirm] = useState(false);
 
   const setWorkspaceZoom = useCallback((nextZoom: number) => {
     setZoom(Math.min(140, Math.max(80, nextZoom)));
@@ -115,9 +120,62 @@ export function AnalysisWorkspace() {
     return () => window.removeEventListener('wheel', handleWheel);
   }, []);
 
+  const [loadingStep, setLoadingStep] = useState(0);
+
   const analyze = useCallback(async (nextAddress: string) => {
+    // Try loading from Supabase first (logged-in users only)
+    try {
+      const lookupRes = await fetch(`/api/analysis/lookup?address=${encodeURIComponent(nextAddress)}`);
+      if (lookupRes.ok) {
+        const lookupBody = await lookupRes.json();
+        const saved = lookupBody?.data;
+        if (saved?.result) {
+          const restored: AnalysisPreviewResponse = {
+            data: saved.result as AnalysisPreviewResponse['data'],
+            meta: { requestId: saved.analysisId, generatedAt: saved.completedAt ?? new Date().toISOString(), mode: 'hybrid' as const, durationMs: 0 },
+          };
+          setResult(restored);
+          setScenarioId('balanced');
+          setSavedAnalysisId(saved.analysisId);
+          setSaveStatus('saved');
+          setStatus('ready');
+          const center = restored.data.identity.center.value;
+          if (center) {
+            setSunlightStatus('loading');
+            fetch('/api/analysis/sunlight', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ latitude: center.latitude, longitude: center.longitude }),
+            })
+              .then((r) => r.ok ? r.json() : Promise.reject())
+              .then((d) => { setSunlight(d as SunlightData); setSunlightStatus('ready'); })
+              .catch(() => setSunlightStatus('error'));
+          }
+          return;
+        }
+      }
+    } catch { /* lookup failed, proceed with fresh analysis */ }
+
     setStatus('loading');
-    setMessage('공간정보와 규제 데이터를 결합하고 있습니다.');
+    setLoadingStep(0);
+    setMessage('주소를 해석하고 있습니다...');
+
+    const steps = [
+      { msg: '주소 → PNU 코드 변환 중...', delay: 800 },
+      { msg: '건축물대장 조회 중...', delay: 1200 },
+      { msg: '공시지가 · 실거래가 수집 중...', delay: 1800 },
+      { msg: '토지이용계획 분석 중...', delay: 2400 },
+      { msg: '기상 · 일조 데이터 연결 중...', delay: 3000 },
+      { msg: '개발 시나리오 산출 중...', delay: 3800 },
+    ];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 0; i < steps.length; i++) {
+      timers.push(setTimeout(() => {
+        setLoadingStep(i + 1);
+        setMessage(steps[i].msg);
+      }, steps[i].delay));
+    }
+
     try {
       const response = await fetch('/api/analysis/preview', {
         method: 'POST',
@@ -131,9 +189,21 @@ export function AnalysisWorkspace() {
         throw new Error(
           payload.error?.message ?? '분석을 완료하지 못했습니다.',
         );
+      timers.forEach(clearTimeout);
       setResult(payload);
       setScenarioId('balanced');
       setStatus('ready');
+
+      // Auto-save to Supabase (silently fails if not logged in)
+      fetch('/api/analysis/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: nextAddress, result: payload.data, coverage: payload.data.coverage }),
+      })
+        .then((r) => r.ok ? r.json() : null)
+        .then((body) => { if (body?.data?.analysisId) { setSavedAnalysisId(body.data.analysisId); setSaveStatus('saved'); } })
+        .catch(() => {});
+
       const center = payload.data.identity.center.value;
       if (center) {
         setSunlightStatus('loading');
@@ -147,6 +217,7 @@ export function AnalysisWorkspace() {
           .catch(() => setSunlightStatus('error'));
       }
     } catch (error) {
+      timers.forEach(clearTimeout);
       setStatus('error');
       setMessage(
         error instanceof Error ? error.message : '분석을 완료하지 못했습니다.',
@@ -309,13 +380,14 @@ export function AnalysisWorkspace() {
             </button>
           </div>
           <ThemeToggle />
-          <Link
-            href={`/report?address=${encodeURIComponent(address)}`}
+          <button
+            type="button"
+            onClick={() => setShowReportConfirm(true)}
             className="grid size-9 place-items-center rounded-lg border border-lime-300/25 bg-lime-300/10 text-lime-200 transition hover:bg-lime-300/15"
-            aria-label="의사결정 보고서 미리보기"
+            aria-label="의사결정 보고서 생성"
           >
             <Download className="size-4" />
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -365,12 +437,25 @@ export function AnalysisWorkspace() {
 
         {status === 'loading' && (
           <div className="grid min-h-[calc(100vh-64px)] place-items-center px-6">
-            <div className="text-center">
-              <LoaderCircle className="mx-auto size-8 animate-spin text-cyan-300" />
-              <p className="mt-5 text-sm text-slate-300">{message}</p>
-              <p className="mt-2 text-xs text-slate-600">
-                주소 → PNU → 필지 → 규제 → 시장 → 시나리오
-              </p>
+            <div className="w-full max-w-sm text-center">
+              <LoaderCircle className="mx-auto size-10 animate-spin text-cyan-300" />
+              <p className="mt-6 text-base font-medium text-white">{message}</p>
+              <div className="mx-auto mt-6 space-y-2">
+                {['주소 해석', '건축물대장', '공시지가·실거래', '토지이용계획', '기상·일조', '시나리오 산출'].map((step, i) => (
+                  <div key={step} className="flex items-center gap-3">
+                    <div className={`grid size-5 place-items-center rounded-full text-[10px] font-bold ${i < loadingStep ? 'bg-cyan-300 text-slate-950' : i === loadingStep ? 'border border-cyan-300/50 text-cyan-300' : 'border border-white/10 text-slate-600'}`}>
+                      {i < loadingStep ? '✓' : i + 1}
+                    </div>
+                    <span className={`text-xs ${i < loadingStep ? 'text-cyan-200' : i === loadingStep ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {step}
+                    </span>
+                    {i === loadingStep && <LoaderCircle className="size-3 animate-spin text-cyan-300/60" />}
+                  </div>
+                ))}
+              </div>
+              <div className="mx-auto mt-6 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-lime-300 transition-all duration-700" style={{ width: `${Math.min((loadingStep / 6) * 100, 100)}%` }} />
+              </div>
             </div>
           </div>
         )}
@@ -720,9 +805,10 @@ export function AnalysisWorkspace() {
                 <p className="px-1 text-xs text-amber-300">먼저 분석 결과를 저장해 주세요.</p>
               )}
 
-              <Link
-                href={`/report?address=${encodeURIComponent(address)}`}
-                className="block rounded-2xl border border-lime-300/20 bg-lime-300/[0.07] p-4 transition hover:bg-lime-300/[0.12]"
+              <button
+                type="button"
+                onClick={() => setShowReportConfirm(true)}
+                className="block w-full rounded-2xl border border-lime-300/20 bg-lime-300/[0.07] p-4 text-left transition hover:bg-lime-300/[0.12]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-lime-200">
@@ -733,7 +819,7 @@ export function AnalysisWorkspace() {
                 <p className="mt-2 text-xs leading-5 text-slate-400">
                   고객에게 바로 보여줄 수 있는 개발·상권 보고서 미리보기
                 </p>
-              </Link>
+              </button>
 
               <p className="px-1 text-xs leading-5 text-slate-600">
                 본 결과는 사전검토용 개략 분석이며 인허가, 감정평가 또는 전문
@@ -743,6 +829,51 @@ export function AnalysisWorkspace() {
           </div>
         )}
       </div>
+
+      {/* Report generation confirmation modal */}
+      {showReportConfirm && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm" onClick={() => setShowReportConfirm(false)}>
+          <div className="mx-4 w-full max-w-md rounded-2xl border border-white/12 bg-[#0c1829] p-6 shadow-[0_40px_120px_rgba(0,0,0,.6)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">보고서 생성</h3>
+              <button type="button" onClick={() => setShowReportConfirm(false)} className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="mt-4 rounded-xl border border-lime-300/15 bg-lime-300/[0.04] p-4">
+              <div className="flex gap-3">
+                <FileText className="mt-0.5 size-5 shrink-0 text-lime-300" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white">PLINT Decision Report</p>
+                  <p className="mt-1 text-xs text-slate-400">{address}</p>
+                  {result && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      {result.data.scenarios.length}개 시나리오 · 데이터 커버리지 {result.data.coverage.percent}%
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-400">현재 분석 결과를 기반으로 개발·상권 보고서를 생성합니다.</p>
+            <div className="mt-5 flex gap-3">
+              <button type="button" onClick={() => setShowReportConfirm(false)} className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] py-2.5 text-sm text-slate-300 hover:bg-white/[0.08]">
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReportConfirm(false);
+                  router.push(`/report?address=${encodeURIComponent(address)}`);
+                }}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-300 py-2.5 text-sm font-medium text-slate-950 hover:bg-lime-200"
+              >
+                <FileText className="size-4" />
+                보고서 생성
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

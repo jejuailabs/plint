@@ -238,7 +238,7 @@ export function ReportPreview() {
             PLINT DECISION REPORT
           </div>
           <div className="flex items-center gap-2 print:hidden">
-            <Button onClick={() => window.print()} variant="ghost" size="sm" className="h-8 gap-1.5 text-xs text-slate-400 hover:text-white">
+            <Button onClick={() => { const prev = document.title; document.title = `PLINT_분석보고서_${address.replace(/\s+/g, '_').slice(0, 30)}`; window.print(); document.title = prev; }} variant="ghost" size="sm" className="h-8 gap-1.5 text-xs text-slate-400 hover:text-white">
               <Printer className="size-3.5" /> PDF
             </Button>
             <Button onClick={downloadExcel} disabled={downloading} size="sm" className="h-8 gap-1.5 bg-white/[0.08] text-xs text-white hover:bg-white/[0.14]">

@@ -7,7 +7,7 @@
 
 import type { Connector, ConnectorResult } from '@/lib/external-apis/connector';
 import { getConnectorManifest } from '@/lib/external-apis/registry';
-import { fetchWithRetry, HttpError } from '@/lib/external-apis/http-client';
+import { fetchWithRetry, HttpError, buildDataGoKrUrl } from '@/lib/external-apis/http-client';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,18 +69,23 @@ export function createBuildingLedgerConnector(): Connector<BuildingLedgerInput, 
         return emptyResult('DATA_GO_KR_API_KEY is not configured');
       }
 
-      const url = new URL('http://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo');
-      url.searchParams.set('serviceKey', apiKey);
-      url.searchParams.set('sigunguCd', input.sigunguCode);
-      url.searchParams.set('bjdongCd', input.bjdongCode);
-      url.searchParams.set('bun', input.bun.padStart(4, '0'));
-      url.searchParams.set('ji', input.ji.padStart(4, '0'));
-      url.searchParams.set('numOfRows', '1');
-      url.searchParams.set('pageNo', '1');
-      url.searchParams.set('_type', 'json');
+      const fullUrl = buildDataGoKrUrl(
+        'http://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo',
+        'serviceKey',
+        apiKey,
+        {
+          sigunguCd: input.sigunguCode,
+          bjdongCd: input.bjdongCode,
+          bun: input.bun.padStart(4, '0'),
+          ji: input.ji.padStart(4, '0'),
+          numOfRows: '1',
+          pageNo: '1',
+          _type: 'json',
+        },
+      );
 
       try {
-        const raw = await fetchWithRetry<DataGoKrResponse>(url.toString(), {
+        const raw = await fetchWithRetry<DataGoKrResponse>(fullUrl, {
           timeoutMs: manifest.timeoutMs,
           signal,
         });

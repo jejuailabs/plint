@@ -18,7 +18,9 @@ const CESIUM_CDN = `https://cdnjs.cloudflare.com/ajax/libs/cesium/${CESIUM_VERSI
 function parcelRing(longitude: number, latitude: number, areaSqm?: number) {
   const halfSideM = Math.max(12, Math.min(38, Math.sqrt(areaSqm ?? 480) / 2));
   const latOff = halfSideM / 111_320;
-  const lonOff = halfSideM / (111_320 * Math.max(Math.cos((latitude * Math.PI) / 180), 0.2));
+  const lonOff =
+    halfSideM /
+    (111_320 * Math.max(Math.cos((latitude * Math.PI) / 180), 0.2));
   return [
     longitude - lonOff, latitude - latOff,
     longitude + lonOff, latitude - latOff,
@@ -62,7 +64,12 @@ function loadCesiumFromCDN(): Promise<typeof import('cesium')> {
   return cesiumPromise;
 }
 
-export function CesiumContext({ address, center, areaSqm, scenario }: CesiumContextProps) {
+export function CesiumContext({
+  address,
+  center,
+  areaSqm,
+  scenario,
+}: CesiumContextProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
@@ -90,7 +97,9 @@ export function CesiumContext({ address, center, areaSqm, scenario }: CesiumCont
           selectionIndicator: false,
           timeline: false,
           baseLayer: new Cesium.ImageryLayer(
-            new Cesium.OpenStreetMapImageryProvider({ url: 'https://tile.openstreetmap.org/' }),
+            new Cesium.OpenStreetMapImageryProvider({
+              url: 'https://tile.openstreetmap.org/',
+            }),
           ),
           terrainProvider: new Cesium.EllipsoidTerrainProvider(),
           requestRenderMode: true,
@@ -98,48 +107,103 @@ export function CesiumContext({ address, center, areaSqm, scenario }: CesiumCont
         });
 
         viewer.scene.globe.enableLighting = true;
-        viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#07101c');
-        if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = false;
+        viewer.scene.backgroundColor =
+          Cesium.Color.fromCssColorString('#060e18');
+        if (viewer.scene.skyAtmosphere) {
+          viewer.scene.skyAtmosphere.show = false;
+        }
         viewer.scene.fog.enabled = true;
-        viewer.scene.fog.density = 0.00018;
+        viewer.scene.fog.density = 0.00015;
 
-        const heightM = Math.max(10, scenario.floors.reduce((t: number, f: { heightM: number }) => t + f.heightM, 0));
-        const sideM = Math.max(18, Math.min(55, Math.sqrt(areaSqm ?? 480) * 0.88));
-        const position = Cesium.Cartesian3.fromDegrees(center.longitude, center.latitude, heightM / 2);
+        const heightM = Math.max(
+          10,
+          scenario.floors.reduce(
+            (t: number, f: { heightM: number }) => t + f.heightM,
+            0,
+          ),
+        );
+        const sideM = Math.max(
+          18,
+          Math.min(55, Math.sqrt(areaSqm ?? 480) * 0.88),
+        );
 
+        // Parcel boundary
         viewer.entities.add({
           name: '대상 필지',
           polygon: {
-            hierarchy: Cesium.Cartesian3.fromDegreesArray(parcelRing(center.longitude, center.latitude, areaSqm)),
-            material: Cesium.Color.LIME.withAlpha(0.24),
+            hierarchy: Cesium.Cartesian3.fromDegreesArray(
+              parcelRing(center.longitude, center.latitude, areaSqm),
+            ),
+            material: Cesium.Color.LIME.withAlpha(0.2),
             outline: true,
             outlineColor: Cesium.Color.fromCssColorString('#bef264'),
           },
         });
-        viewer.entities.add({
-          name: `${scenario.name} 개발 매스`,
-          position,
-          box: {
-            dimensions: new Cesium.Cartesian3(sideM, sideM * 0.84, heightM),
-            material: Cesium.Color.fromCssColorString('#bff7ff').withAlpha(0.78),
-            outline: true,
-            outlineColor: Cesium.Color.fromCssColorString('#22d3ee'),
-          },
-        });
+
+        // Per-floor building mass
+        let yAccum = 0;
+        for (const floor of scenario.floors) {
+          const scale = floor.footprintScale ?? 1;
+          const floorW = sideM * scale;
+          const floorD = sideM * 0.84 * scale;
+          const floorH = floor.heightM;
+
+          const pos = Cesium.Cartesian3.fromDegrees(
+            center.longitude,
+            center.latitude,
+            yAccum + floorH / 2,
+          );
+          viewer.entities.add({
+            name: `${floor.floor}F`,
+            position: pos,
+            box: {
+              dimensions: new Cesium.Cartesian3(floorW, floorD, floorH),
+              material: Cesium.Color.fromCssColorString('#bff7ff').withAlpha(0.65),
+              outline: true,
+              outlineColor: Cesium.Color.fromCssColorString('#22d3ee').withAlpha(0.7),
+            },
+          });
+          yAccum += floorH;
+        }
+
+        // Top label marker
         viewer.entities.add({
           name: address,
-          position: Cesium.Cartesian3.fromDegrees(center.longitude, center.latitude, heightM + 8),
+          position: Cesium.Cartesian3.fromDegrees(
+            center.longitude,
+            center.latitude,
+            yAccum + 6,
+          ),
           point: {
-            pixelSize: 9,
+            pixelSize: 10,
             color: Cesium.Color.fromCssColorString('#bef264'),
-            outlineColor: Cesium.Color.fromCssColorString('#07101c'),
+            outlineColor: Cesium.Color.fromCssColorString('#060e18'),
             outlineWidth: 2,
+          },
+          label: {
+            text: `${scenario.name}\n${scenario.floors.length}F · ${Math.round(heightM)}m`,
+            font: '13px sans-serif',
+            fillColor: Cesium.Color.fromCssColorString('#bef264'),
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -14),
           },
         });
 
+        // Camera
         viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(center.longitude, center.latitude, 780),
-          orientation: { heading: Cesium.Math.toRadians(28), pitch: Cesium.Math.toRadians(-47), roll: 0 },
+          destination: Cesium.Cartesian3.fromDegrees(
+            center.longitude,
+            center.latitude,
+            620,
+          ),
+          orientation: {
+            heading: Cesium.Math.toRadians(25),
+            pitch: Cesium.Math.toRadians(-50),
+            roll: 0,
+          },
           duration: 0,
         });
         viewer.scene.requestRender();
@@ -147,7 +211,9 @@ export function CesiumContext({ address, center, areaSqm, scenario }: CesiumCont
       } catch (error) {
         console.error('Cesium init failed:', error);
         if (!disposed) {
-          setErrorMsg(error instanceof Error ? error.message : '알 수 없는 오류');
+          setErrorMsg(
+            error instanceof Error ? error.message : '알 수 없는 오류',
+          );
           setStatus('error');
         }
       }
@@ -156,27 +222,37 @@ export function CesiumContext({ address, center, areaSqm, scenario }: CesiumCont
     void initialize();
     return () => {
       disposed = true;
-      try { if (viewer && !viewer.isDestroyed()) viewer.destroy(); } catch {}
+      try {
+        if (viewer && !viewer.isDestroyed()) viewer.destroy();
+      } catch {
+        /* noop */
+      }
     };
   }, [address, areaSqm, center.latitude, center.longitude, scenario]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden rounded-[inherit] bg-[#07101c]">
+    <div className="absolute inset-0 overflow-hidden rounded-[inherit] bg-[#060e18]">
       <div ref={containerRef} className="cesium-context absolute inset-0" />
       {status === 'loading' && (
-        <div className="absolute inset-0 grid place-items-center bg-[#07101c]">
+        <div className="absolute inset-0 grid place-items-center bg-[#060e18]">
           <div className="text-center">
             <LoaderCircle className="mx-auto size-7 animate-spin text-cyan-300" />
-            <p className="mt-3 text-xs text-slate-300">도시 공간을 불러오는 중</p>
+            <p className="mt-3 text-xs text-slate-300">
+              도시 공간을 불러오는 중
+            </p>
           </div>
         </div>
       )}
       {status === 'error' && (
-        <div className="absolute inset-0 grid place-items-center bg-[#07101c] p-6 text-center">
+        <div className="absolute inset-0 grid place-items-center bg-[#060e18] p-6 text-center">
           <div>
             <AlertTriangle className="mx-auto size-7 text-amber-300" />
-            <p className="mt-3 text-sm text-slate-200">도시 컨텍스트를 불러오지 못했습니다.</p>
-            <p className="mt-2 text-xs text-slate-500">{errorMsg || '네트워크 또는 WebGL 상태를 확인해 주세요.'}</p>
+            <p className="mt-3 text-sm text-slate-200">
+              도시 컨텍스트를 불러오지 못했습니다.
+            </p>
+            <p className="mt-2 text-xs text-slate-500">
+              {errorMsg || '네트워크 또는 WebGL 상태를 확인해 주세요.'}
+            </p>
           </div>
         </div>
       )}

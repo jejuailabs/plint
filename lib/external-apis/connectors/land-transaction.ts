@@ -7,7 +7,7 @@
 
 import type { Connector, ConnectorResult } from '@/lib/external-apis/connector';
 import { getConnectorManifest } from '@/lib/external-apis/registry';
-import { fetchWithRetry, HttpError } from '@/lib/external-apis/http-client';
+import { fetchWithRetry, HttpError, buildDataGoKrUrl } from '@/lib/external-apis/http-client';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,18 +65,21 @@ export function createLandTransactionConnector(): Connector<LandTransactionInput
         return emptyResult('DATA_GO_KR_API_KEY is not configured');
       }
 
-      const url = new URL(
+      const fullUrl = buildDataGoKrUrl(
         'http://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade',
+        'serviceKey',
+        apiKey,
+        {
+          LAWD_CD: input.lawdCode,
+          DEAL_YMD: input.dealYearMonth,
+          numOfRows: '100',
+          pageNo: '1',
+          _type: 'json',
+        },
       );
-      url.searchParams.set('serviceKey', apiKey);
-      url.searchParams.set('LAWD_CD', input.lawdCode);
-      url.searchParams.set('DEAL_YMD', input.dealYearMonth);
-      url.searchParams.set('numOfRows', '100');
-      url.searchParams.set('pageNo', '1');
-      url.searchParams.set('_type', 'json');
 
       try {
-        const raw = await fetchWithRetry<DataGoKrResponse>(url.toString(), {
+        const raw = await fetchWithRetry<DataGoKrResponse>(fullUrl, {
           timeoutMs: manifest.timeoutMs,
           signal,
         });

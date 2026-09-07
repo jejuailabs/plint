@@ -153,3 +153,26 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
     }, { once: true });
   });
 }
+
+/**
+ * Build a URL with the API key appended directly to avoid double-encoding.
+ *
+ * data.go.kr keys contain `+`, `/`, `=` characters. When the key stored in
+ * `.env.local` is the "인코딩" variant (already %-encoded), using
+ * `url.searchParams.set()` double-encodes the `%` signs → API rejects.
+ *
+ * This helper detects pre-encoded keys and appends them raw.
+ */
+export function buildDataGoKrUrl(
+  base: string,
+  keyParam: 'serviceKey' | 'authkey',
+  apiKey: string,
+  params: Record<string, string>,
+): string {
+  const url = new URL(base);
+  for (const [k, v] of Object.entries(params)) {
+    url.searchParams.set(k, v);
+  }
+  const sep = url.search ? '&' : '?';
+  return `${url.toString()}${sep}${keyParam}=${apiKey}`;
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { LoaderCircle } from 'lucide-react';
+import { Layers3, LoaderCircle, MapPin, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
@@ -10,13 +10,20 @@ export function NewProjectForm() {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingResult, setPendingResult] = useState<AddressResult | null>(null);
 
-  const handleSelect = useCallback(async (result: AddressResult) => {
-    const normalized = (result.jibunAddress || result.roadAddress).trim();
+  const handleSelect = useCallback((result: AddressResult) => {
+    setPendingResult(result);
+  }, []);
+
+  const confirmAndStart = useCallback(async () => {
+    if (!pendingResult) return;
+    const normalized = (pendingResult.jibunAddress || pendingResult.roadAddress).trim();
     if (!normalized) return;
 
     setIsPending(true);
     setErrorMessage(null);
+    setPendingResult(null);
 
     try {
       const siteRes = await fetch('/api/sites', {
@@ -49,7 +56,7 @@ export function NewProjectForm() {
       setErrorMessage(err instanceof Error ? err.message : '오류가 발생했습니다.');
       setIsPending(false);
     }
-  }, [router]);
+  }, [pendingResult, router]);
 
   return (
     <div className="mx-auto w-full max-w-xl">
@@ -72,6 +79,44 @@ export function NewProjectForm() {
           {errorMessage}
         </p>
       ) : null}
+
+      {pendingResult && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingResult(null)}>
+          <div className="mx-4 w-full max-w-md rounded-2xl border border-white/12 bg-[#0c1829] p-6 shadow-[0_40px_120px_rgba(0,0,0,.6)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">주소 확인</h3>
+              <button type="button" onClick={() => setPendingResult(null)} className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
+              <div className="flex gap-3">
+                <MapPin className="mt-0.5 size-4 shrink-0 text-cyan-300" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white">{pendingResult.roadAddress || pendingResult.jibunAddress}</p>
+                  {pendingResult.roadAddress && pendingResult.jibunAddress && (
+                    <p className="mt-1 text-xs text-slate-400">{pendingResult.jibunAddress}</p>
+                  )}
+                  {pendingResult.buildingName && (
+                    <p className="mt-1 text-xs text-cyan-200/70">{pendingResult.buildingName}</p>
+                  )}
+                  <p className="mt-1 text-[11px] text-slate-500">{pendingResult.zipCode}</p>
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-400">이 주소로 개발 사전검토 분석을 시작합니다.</p>
+            <div className="mt-5 flex gap-3">
+              <button type="button" onClick={() => setPendingResult(null)} className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] py-2.5 text-sm text-slate-300 hover:bg-white/[0.08]">
+                취소
+              </button>
+              <button type="button" onClick={confirmAndStart} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-cyan-300 py-2.5 text-sm font-medium text-slate-950 hover:bg-cyan-200">
+                <Layers3 className="size-4" />
+                분석 시작
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
