@@ -10,6 +10,7 @@ export type CesiumContextProps = {
   center: { latitude: number; longitude: number };
   areaSqm?: number;
   scenario: DevelopmentScenario;
+  glbDataUrl?: string | null;
 };
 
 const CESIUM_VERSION = '1.121.1';
@@ -69,6 +70,7 @@ export function CesiumContext({
   center,
   areaSqm,
   scenario,
+  glbDataUrl,
 }: CesiumContextProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -233,6 +235,29 @@ export function CesiumContext({
           },
         });
 
+        // Load Blender GLB model if available
+        if (glbDataUrl) {
+          try {
+            const modelEntity = viewer.entities.add({
+              name: 'Blender 건축 모델',
+              position: Cesium.Cartesian3.fromDegrees(center.longitude, center.latitude, 0),
+              model: {
+                uri: glbDataUrl,
+                scale: 1.0,
+                heightReference: hasIon ? Cesium.HeightReference.CLAMP_TO_GROUND : undefined,
+              },
+            });
+            if (modelEntity) {
+              // Hide the box masses when GLB is loaded
+              viewer.entities.values.forEach((e: any) => {
+                if (e.box) e.show = false;
+              });
+            }
+          } catch {
+            // GLB load failed, keep box masses visible
+          }
+        }
+
         // Camera — lower angle for more dramatic view with terrain
         viewer.camera.flyTo({
           destination: Cesium.Cartesian3.fromDegrees(
@@ -269,7 +294,7 @@ export function CesiumContext({
         /* noop */
       }
     };
-  }, [address, areaSqm, center.latitude, center.longitude, isValidKoreaCoord, scenario]);
+  }, [address, areaSqm, center.latitude, center.longitude, glbDataUrl, isValidKoreaCoord, scenario]);
 
   return (
     <div className="absolute inset-0 overflow-hidden rounded-[inherit] bg-[#060e18]">

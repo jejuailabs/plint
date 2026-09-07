@@ -102,6 +102,8 @@ export function AnalysisWorkspace() {
   const [sunlight, setSunlight] = useState<SunlightData | null>(null);
   const [sunlightStatus, setSunlightStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [showReportConfirm, setShowReportConfirm] = useState(false);
+  const [blenderPreview, setBlenderPreview] = useState<string | null>(null);
+  const [blenderGlb, setBlenderGlb] = useState<string | null>(null);
 
   const setWorkspaceZoom = useCallback((nextZoom: number) => {
     setZoom(Math.min(140, Math.max(80, nextZoom)));
@@ -266,6 +268,33 @@ export function AnalysisWorkspace() {
     }
   }, [result, address, saveStatus]);
 
+  const pollBlenderJob = useCallback(async (jobId: string) => {
+    const maxAttempts = 60;
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((r) => setTimeout(r, 4000));
+      try {
+        const res = await fetch(`/api/modeling/runpod/${encodeURIComponent(jobId)}`);
+        if (!res.ok) continue;
+        const job = await res.json();
+        if (job.status === 'COMPLETED' && job.output) {
+          if (job.output.preview?.base64) {
+            setBlenderPreview(`data:image/png;base64,${job.output.preview.base64}`);
+          }
+          if (job.output.model?.base64) {
+            setBlenderGlb(`data:model/gltf-binary;base64,${job.output.model.base64}`);
+          }
+          setExportStatus('submitted');
+          return;
+        }
+        if (job.status === 'FAILED' || job.status === 'CANCELLED' || job.status === 'TIMED_OUT') {
+          setExportStatus('error');
+          return;
+        }
+      } catch { /* retry */ }
+    }
+    setExportStatus('error');
+  }, []);
+
   const exportBlender = useCallback(async () => {
     if (!result || !scenario || exportStatus === 'submitting') return;
     if (!savedAnalysisId) {
@@ -273,6 +302,8 @@ export function AnalysisWorkspace() {
       return;
     }
     setExportStatus('submitting');
+    setBlenderPreview(null);
+    setBlenderGlb(null);
     try {
       const boundary = result.data.geometry.boundary.value;
       const res = await fetch('/api/modeling/runpod', {
@@ -295,11 +326,15 @@ export function AnalysisWorkspace() {
         }),
       });
       if (!res.ok) throw new Error('Blender 모델링 요청 실패');
+      const body = await res.json();
+      if (body?.data?.jobId) {
+        void pollBlenderJob(body.data.jobId);
+      }
       setExportStatus('submitted');
     } catch {
       setExportStatus('error');
     }
-  }, [result, scenario, savedAnalysisId, exportStatus]);
+  }, [result, scenario, savedAnalysisId, exportStatus, pollBlenderJob]);
 
   function submit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -628,6 +663,7 @@ export function AnalysisWorkspace() {
                     }
                     areaSqm={result.data.geometry.areaSqm.value ?? undefined}
                     scenario={scenario}
+                    glbDataUrl={blenderGlb}
                   />
                 )}
                 <div className="pointer-events-none absolute left-5 top-5">
@@ -794,19 +830,38 @@ export function AnalysisWorkspace() {
 
               <Button
                 onClick={exportBlender}
-                disabled={!savedAnalysisId || exportStatus === 'submitting' || exportStatus === 'submitted'}
+                disabled={!savedAnalysisId || exportStatus === 'submitting' || (exportStatus === 'submitted' && !!blenderPreview)}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] disabled:opacity-50"
               >
                 {exportStatus === 'submitting' ? (
-                  <><LoaderCircle className="size-4 animate-spin" /> 모델링 요청 중...</>
+                  <><LoaderCircle className="size-4 animate-spin" /> Blender 렌더링 중...</>
+                ) : exportStatus === 'submitted' && blenderPreview ? (
+                  <><CheckCircle2 className="size-4 text-lime-300" /> 조감도 렌더링 완료</>
                 ) : exportStatus === 'submitted' ? (
-                  <><CheckCircle2 className="size-4 text-lime-300" /> 모델링 작업 시작됨</>
+                  <><LoaderCircle className="size-4 animate-spin" /> GPU 워커 처리 중...</>
                 ) : (
-                  <><Box className="size-4" /> 3D 모델 내보내기 (Blender)</>
+                  <><Box className="size-4" /> 3D 모델 + 조감도 생성 (Blender)</>
                 )}
               </Button>
               {!savedAnalysisId && exportStatus === 'error' && (
                 <p className="px-1 text-xs text-amber-300">먼저 분석 결과를 저장해 주세요.</p>
+              )}
+              {blenderPreview && (
+                <Card className="overflow-hidden border border-lime-300/15 bg-black/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <Sparkles className="size-4 text-lime-300" />
+                      Blender 조감도
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-2">
+                    <img
+                      src={blenderPreview}
+                      alt="Blender 조감도 렌더링"
+                      className="w-full rounded-lg"
+                    />
+                  </CardContent>
+                </Card>
               )}
 
               <button
