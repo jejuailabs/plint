@@ -696,19 +696,23 @@ export function AnalysisWorkspace() {
                   />
                   <SummaryRow
                     label="예상 매출"
-                    value={formatKrw(scenario.estimatedRevenueKrw)}
+                    value={scenario.estimatedRevenueKrw > 0 ? formatKrw(scenario.estimatedRevenueKrw) : '미확인'}
                   />
                   <SummaryRow
                     label="예상 총사업비"
-                    value={formatKrw(scenario.estimatedCostKrw)}
+                    value={scenario.estimatedCostKrw > 0 ? formatKrw(scenario.estimatedCostKrw) : '미확인'}
                   />
                   <div className="flex items-center justify-between border-t border-white/10 pt-3">
                     <span className="text-xs text-slate-400">개략 수익률</span>
-                    <span
-                      className={`text-lg font-semibold ${scenario.estimatedProfitRatePercent >= 0 ? 'text-lime-200' : 'text-rose-300'}`}
-                    >
-                      {scenario.estimatedProfitRatePercent}%
-                    </span>
+                    {scenario.estimatedRevenueKrw > 0 ? (
+                      <span
+                        className={`text-lg font-semibold ${scenario.estimatedProfitRatePercent >= 0 ? 'text-lime-200' : 'text-rose-300'}`}
+                      >
+                        {scenario.estimatedProfitRatePercent}%
+                      </span>
+                    ) : (
+                      <span className="text-sm text-slate-500">시장 데이터 부족</span>
+                    )}
                   </div>
                 </CardContent>
               </Card>

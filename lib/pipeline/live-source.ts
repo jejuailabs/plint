@@ -184,5 +184,17 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
     if (!r.data && r.warnings.length) warnings.push(...r.warnings);
   }
 
+  // Fix coordinates from cadastral boundary centroid if juso returned 0,0
+  if (juso.data && (juso.data.latitude === 0 || juso.data.longitude === 0) && cadastralBoundary.data) {
+    const ring = cadastralBoundary.data.coordinates[0];
+    if (ring && ring.length > 2) {
+      let sumLon = 0, sumLat = 0;
+      for (const [lon, lat] of ring) { sumLon += lon; sumLat += lat; }
+      juso.data.longitude = sumLon / ring.length;
+      juso.data.latitude = sumLat / ring.length;
+      warnings.push('좌표를 지적도 폴리곤 중심점에서 보정했습니다.');
+    }
+  }
+
   return { juso, building, landPrice, transactions, weather, landUsePlan, cadastralBoundary, pnuCode: pnu, adminCode, warnings };
 }

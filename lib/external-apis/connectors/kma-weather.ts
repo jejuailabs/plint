@@ -7,7 +7,7 @@
 
 import type { Connector, ConnectorResult } from '@/lib/external-apis/connector';
 import { getConnectorManifest } from '@/lib/external-apis/registry';
-import { fetchWithRetry, HttpError } from '@/lib/external-apis/http-client';
+import { fetchWithRetry, HttpError, buildDataGoKrUrl } from '@/lib/external-apis/http-client';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -68,21 +68,24 @@ export function createKmaWeatherConnector(): Connector<KmaWeatherInput, KmaWeath
         return emptyResult('KMA_API_KEY is not configured');
       }
 
-      const url = new URL(
+      const fullUrl = buildDataGoKrUrl(
         'http://apis.data.go.kr/1360000/AsosHourlyInfoService/getWthrDataList',
+        'serviceKey',
+        apiKey,
+        {
+          numOfRows: '999',
+          pageNo: '1',
+          dataType: 'JSON',
+          dataCd: 'ASOS',
+          dateCd: 'DAY',
+          startDt: input.startDate,
+          endDt: input.endDate,
+          stnIds: input.stationId,
+        },
       );
-      url.searchParams.set('serviceKey', apiKey);
-      url.searchParams.set('numOfRows', '999');
-      url.searchParams.set('pageNo', '1');
-      url.searchParams.set('dataType', 'JSON');
-      url.searchParams.set('dataCd', 'ASOS');
-      url.searchParams.set('dateCd', 'DAY');
-      url.searchParams.set('startDt', input.startDate);
-      url.searchParams.set('endDt', input.endDate);
-      url.searchParams.set('stnIds', input.stationId);
 
       try {
-        const raw = await fetchWithRetry<DataGoKrResponse>(url.toString(), {
+        const raw = await fetchWithRetry<DataGoKrResponse>(fullUrl, {
           timeoutMs: manifest.timeoutMs,
           signal,
         });

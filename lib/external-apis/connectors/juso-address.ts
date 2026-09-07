@@ -124,8 +124,33 @@ export function createJusoAddressConnector(): Connector<
         const mountainFlag = juso.mtYn === '1' ? '2' : '1';
         const pnuCode = `${juso.admCd}${mountainFlag}${bon}${bu}`;
 
-        const latitude = juso.entY ? parseFloat(juso.entY) : 0;
-        const longitude = juso.entX ? parseFloat(juso.entX) : 0;
+        let latitude = juso.entY ? parseFloat(juso.entY) : 0;
+        let longitude = juso.entX ? parseFloat(juso.entX) : 0;
+
+        // Fallback: VWorld geocoding when JUSO doesn't return coordinates
+        if ((latitude === 0 || longitude === 0) && process.env.VWORLD_API_KEY) {
+          try {
+            const geoUrl = new URL('https://api.vworld.kr/req/address');
+            geoUrl.searchParams.set('service', 'address');
+            geoUrl.searchParams.set('request', 'getcoord');
+            geoUrl.searchParams.set('version', '2.0');
+            geoUrl.searchParams.set('crs', 'epsg:4326');
+            geoUrl.searchParams.set('type', 'PARCEL');
+            geoUrl.searchParams.set('address', input.address);
+            geoUrl.searchParams.set('format', 'json');
+            geoUrl.searchParams.set('key', process.env.VWORLD_API_KEY);
+            const geoRes = await fetchWithRetry<{
+              response?: { status?: string; result?: { point?: { x?: string; y?: string } } };
+            }>(geoUrl.toString(), { timeoutMs: 5000, signal });
+            const pt = geoRes.response?.result?.point;
+            if (pt?.x && pt?.y) {
+              longitude = parseFloat(pt.x);
+              latitude = parseFloat(pt.y);
+            }
+          } catch {
+            // VWorld geocoding failed, continue with 0,0
+          }
+        }
         const detailedBuildingNames = (juso.detBdNmList ?? '')
           .split(',')
           .map((name) => name.trim())

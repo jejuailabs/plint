@@ -1,13 +1,15 @@
 /**
  * 토지이용계획확인서 API connector.
  *
- * Endpoint: http://apis.data.go.kr/1611000/nsdi/eios/LadfrlService/getLadfrlList
- * Env:      DATA_GO_KR_API_KEY
+ * Endpoint: https://api.vworld.kr/ned/data/getLandUseAttr
+ * Env:      VWORLD_API_KEY, VWORLD_DOMAIN
+ *
+ * 2024-01부터 구 NSDI(data.go.kr/1611000) → VWorld NED로 이관됨.
  */
 
 import type { Connector, ConnectorResult } from '@/lib/external-apis/connector';
 import { getConnectorManifest } from '@/lib/external-apis/registry';
-import { fetchWithRetry, HttpError, buildDataGoKrUrl } from '@/lib/external-apis/http-client';
+import { fetchWithRetry, HttpError } from '@/lib/external-apis/http-client';
 
 export type LandUsePlanInput = {
   pnuCode: string;
@@ -30,12 +32,17 @@ type LadfrlItem = {
   cnflcAt?: string;
 };
 
-type DataGoKrResponse = {
-  ladfrlVOList?: {
+type VWorldNedResponse = {
+  landUses?: {
     resultCode?: string;
     resultMsg?: string;
-    totalCount?: number;
-    ladfrlVOList?: LadfrlItem | LadfrlItem[];
+    totalCount?: string | number;
+    field?: LadfrlItem | LadfrlItem[];
+  };
+  response?: {
+    resultCode?: string;
+    resultMsg?: string;
+    totalCount?: string | number;
   };
 };
 
@@ -59,35 +66,32 @@ export function createLandUsePlanConnector(): Connector<LandUsePlanInput, LandUs
     manifest,
 
     async execute(input, signal) {
-      const apiKey = process.env.DATA_GO_KR_API_KEY;
-      if (!apiKey) return emptyResult('DATA_GO_KR_API_KEY is not configured');
+      const apiKey = process.env.VWORLD_API_KEY;
+      if (!apiKey) return emptyResult('VWORLD_API_KEY is not configured');
 
-      const fullUrl = buildDataGoKrUrl(
-        'http://apis.data.go.kr/1611000/nsdi/eios/LadfrlService/getLadfrlList',
-        'authkey',
-        apiKey,
-        {
-          pnu: input.pnuCode,
-          format: 'json',
-          numOfRows: '30',
-          pageNo: '1',
-        },
-      );
+      const url = new URL('https://api.vworld.kr/ned/data/getLandUseAttr');
+      url.searchParams.set('key', apiKey);
+      if (process.env.VWORLD_DOMAIN) {
+        url.searchParams.set('domain', process.env.VWORLD_DOMAIN);
+      }
+      url.searchParams.set('pnu', input.pnuCode);
+      url.searchParams.set('format', 'json');
+      url.searchParams.set('numOfRows', '30');
+      url.searchParams.set('pageNo', '1');
 
       try {
-        const raw = await fetchWithRetry<DataGoKrResponse>(fullUrl, {
+        const raw = await fetchWithRetry<VWorldNedResponse>(url.toString(), {
           timeoutMs: manifest.timeoutMs,
           signal,
         });
 
-        const result = raw.ladfrlVOList;
-        if (!result || (result.resultCode && result.resultCode !== 'OK')) {
-          return emptyResult(result?.resultMsg ?? 'Unknown error from land use plan API');
+        const result = raw.landUses;
+        if (!result?.field) {
+          const msg = result?.resultMsg || raw.response?.resultMsg || 'No land use plan data found';
+          return emptyResult(msg);
         }
 
-        const rawItems = result.ladfrlVOList;
-        if (!rawItems) return emptyResult('No land use plan data found');
-
+        const rawItems = result.field;
         const list = Array.isArray(rawItems) ? rawItems : [rawItems];
 
         const zones: LandUseZone[] = list

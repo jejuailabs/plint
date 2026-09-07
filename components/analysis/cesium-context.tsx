@@ -74,13 +74,18 @@ export function CesiumContext({
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
 
+  const isValidKoreaCoord = center.latitude >= 33 && center.latitude <= 39 && center.longitude >= 124 && center.longitude <= 132;
+
   useEffect(() => {
     let disposed = false;
     let viewer: any;
 
     async function initialize() {
       try {
-        if (!containerRef.current) return;
+        if (!containerRef.current || !isValidKoreaCoord) {
+          if (!isValidKoreaCoord) setStatus('error');
+          return;
+        }
 
         const Cesium = await loadCesiumFromCDN();
         if (disposed || !containerRef.current) return;
@@ -228,7 +233,7 @@ export function CesiumContext({
         /* noop */
       }
     };
-  }, [address, areaSqm, center.latitude, center.longitude, scenario]);
+  }, [address, areaSqm, center.latitude, center.longitude, isValidKoreaCoord, scenario]);
 
   return (
     <div className="absolute inset-0 overflow-hidden rounded-[inherit] bg-[#060e18]">
@@ -248,10 +253,10 @@ export function CesiumContext({
           <div>
             <AlertTriangle className="mx-auto size-7 text-amber-300" />
             <p className="mt-3 text-sm text-slate-200">
-              도시 컨텍스트를 불러오지 못했습니다.
+              {isValidKoreaCoord ? '도시 컨텍스트를 불러오지 못했습니다.' : '좌표 정보를 확인할 수 없습니다.'}
             </p>
             <p className="mt-2 text-xs text-slate-500">
-              {errorMsg || '네트워크 또는 WebGL 상태를 확인해 주세요.'}
+              {isValidKoreaCoord ? (errorMsg || '네트워크 또는 WebGL 상태를 확인해 주세요.') : '주소의 좌표 데이터가 제공되지 않아 지도를 표시할 수 없습니다.'}
             </p>
           </div>
         </div>

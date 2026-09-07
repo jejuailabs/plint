@@ -250,8 +250,24 @@ async function runLivePreview(address: string): Promise<AnalysisPreviewResponse>
     landPricePerSqm: officialPrice,
   });
 
-  const lat = jusoData?.latitude ?? 0;
-  const lon = jusoData?.longitude ?? 0;
+  // Fallback coordinates: admin-code prefix → approximate city center
+  const ADMIN_CENTER: Record<string, [number, number]> = {
+    '11': [37.5665, 126.9780], '26': [35.1796, 129.0756], '27': [35.8714, 128.6014],
+    '28': [37.4563, 126.7052], '29': [35.1595, 126.8526], '30': [36.3504, 127.3845],
+    '31': [35.5384, 129.3114], '36': [36.4800, 127.0000], '41': [37.4138, 127.5183],
+    '42': [37.8813, 127.7298], '43': [36.6357, 127.4912], '44': [36.6588, 126.6728],
+    '45': [35.8203, 127.1089], '46': [34.8161, 126.4629], '47': [36.4919, 128.8889],
+    '48': [35.4606, 128.2132], '50': [33.4996, 126.5312],
+  };
+
+  let lat = jusoData?.latitude ?? 0;
+  let lon = jusoData?.longitude ?? 0;
+  if (lat === 0 || lon === 0) {
+    const prefix = src.adminCode?.slice(0, 2) ?? '';
+    const fallback = ADMIN_CENTER[prefix] ?? [37.5665, 126.9780];
+    lat = fallback[0];
+    lon = fallback[1];
+  }
 
   const partial: Omit<ParcelIntelligence, 'coverage'> = {
     // -- identity (from juso) ------------------------------------------------

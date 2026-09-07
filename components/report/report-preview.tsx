@@ -269,7 +269,7 @@ export function ReportPreview() {
             <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <CoverMetric label="권장 시나리오" value={scenario.name} />
               <CoverMetric label="예상 연면적" value={`${scenario.grossFloorAreaSqm.toLocaleString('ko-KR')}㎡`} />
-              <CoverMetric label="개략 수익률" value={`${scenario.estimatedProfitRatePercent}%`} accent />
+              <CoverMetric label="개략 수익률" value={scenario.estimatedRevenueKrw > 0 ? `${scenario.estimatedProfitRatePercent}%` : '미확인'} accent />
               <CoverMetric label="데이터 신뢰도" value={`${data.coverage.percent}%`} />
             </div>
 
@@ -415,9 +415,9 @@ export function ReportPreview() {
               const maxRev = Math.max(...data.scenarios.map((x) => x.estimatedRevenueKrw));
               return (
                 <div key={s.id} className="space-y-2">
-                  <p className="text-xs font-medium text-slate-300 print:text-slate-700">{s.name} <span className="text-slate-500">· 수익률 {s.estimatedProfitRatePercent}%</span></p>
-                  <HBar label="예상 매출" value={s.estimatedRevenueKrw} max={maxRev} color="cyan" />
-                  <HBar label="예상 비용" value={s.estimatedCostKrw} max={maxRev} color="amber" />
+                  <p className="text-xs font-medium text-slate-300 print:text-slate-700">{s.name} <span className="text-slate-500">· 수익률 {s.estimatedRevenueKrw > 0 ? `${s.estimatedProfitRatePercent}%` : '미확인'}</span></p>
+                  <HBar label="예상 매출" value={s.estimatedRevenueKrw} max={maxRev || 1} color="cyan" />
+                  <HBar label="예상 비용" value={s.estimatedCostKrw} max={maxRev || 1} color="amber" />
                 </div>
               );
             })}
@@ -668,8 +668,8 @@ function ScenarioCard({ scenario: s, isRecommended }: { scenario: DevelopmentSce
       <div className="mt-3 grid grid-cols-4 gap-3 text-center">
         <ScenarioStat label="연면적" value={`${s.grossFloorAreaSqm.toLocaleString('ko-KR')}㎡`} />
         <ScenarioStat label="건폐/용적" value={`${s.buildingCoverageRatio}/${s.floorAreaRatio}%`} />
-        <ScenarioStat label="예상 매출" value={formatKrw(s.estimatedRevenueKrw)} />
-        <ScenarioStat label="수익률" value={`${s.estimatedProfitRatePercent}%`} accent />
+        <ScenarioStat label="예상 매출" value={s.estimatedRevenueKrw > 0 ? formatKrw(s.estimatedRevenueKrw) : '미확인'} />
+        <ScenarioStat label="수익률" value={s.estimatedRevenueKrw > 0 ? `${s.estimatedProfitRatePercent}%` : '미확인'} accent />
       </div>
     </div>
   );

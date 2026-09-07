@@ -1,13 +1,15 @@
 /**
- * 개별공시지가 / 토지특성 API connector.
+ * 개별공시지가 API connector.
  *
- * Endpoint: http://apis.data.go.kr/1611000/nsdi/IndvdLandPriceService
- * Env:      DATA_GO_KR_API_KEY
+ * Endpoint: https://api.vworld.kr/ned/data/getIndvdLandPriceAttr
+ * Env:      VWORLD_API_KEY, VWORLD_DOMAIN
+ *
+ * 2024-01부터 구 NSDI(data.go.kr/1611000) → VWorld NED로 이관됨.
  */
 
 import type { Connector, ConnectorResult } from '@/lib/external-apis/connector';
 import { getConnectorManifest } from '@/lib/external-apis/registry';
-import { fetchWithRetry, HttpError, buildDataGoKrUrl } from '@/lib/external-apis/http-client';
+import { fetchWithRetry, HttpError } from '@/lib/external-apis/http-client';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,18 +27,21 @@ export type LandPriceOutput = {
 };
 
 type LandPriceItem = {
-  pblntfPclnd?: number;
+  pblntfPclnd?: string | number;
   stdrYear?: string;
-  tpgrphHgCd?: string;
-  tpgrphFrmCd?: string;
 };
 
-type DataGoKrResponse = {
-  indvdLandPrices: {
-    resultCode: string;
-    resultMsg: string;
-    totalCount?: number;
+type VWorldNedResponse = {
+  indvdLandPrices?: {
+    resultCode?: string;
+    resultMsg?: string;
+    totalCount?: string | number;
     field?: LandPriceItem | LandPriceItem[];
+  };
+  response?: {
+    resultCode?: string;
+    resultMsg?: string;
+    totalCount?: string | number;
   };
 };
 
@@ -54,34 +59,31 @@ export function createLandPriceConnector(): Connector<LandPriceInput, LandPriceO
     manifest,
 
     async execute(input, signal) {
-      const apiKey = process.env.DATA_GO_KR_API_KEY;
+      const apiKey = process.env.VWORLD_API_KEY;
       if (!apiKey) {
-        return emptyResult('DATA_GO_KR_API_KEY is not configured');
+        return emptyResult('VWORLD_API_KEY is not configured');
       }
 
-      const fullUrl = buildDataGoKrUrl(
-        'http://apis.data.go.kr/1611000/nsdi/IndvdLandPriceService/attr/getIndvdLandPriceAttr',
-        'authkey',
-        apiKey,
-        {
-          pnu: input.pnuCode,
-          stdrYear: String(new Date().getFullYear() - 1),
-          format: 'json',
-          numOfRows: '1',
-          pageNo: '1',
-        },
-      );
+      const url = new URL('https://api.vworld.kr/ned/data/getIndvdLandPriceAttr');
+      url.searchParams.set('key', apiKey);
+      if (process.env.VWORLD_DOMAIN) {
+        url.searchParams.set('domain', process.env.VWORLD_DOMAIN);
+      }
+      url.searchParams.set('pnu', input.pnuCode);
+      url.searchParams.set('stdrYear', String(new Date().getFullYear() - 1));
+      url.searchParams.set('format', 'json');
+      url.searchParams.set('numOfRows', '1');
+      url.searchParams.set('pageNo', '1');
 
       try {
-        const raw = await fetchWithRetry<DataGoKrResponse>(fullUrl, {
+        const raw = await fetchWithRetry<VWorldNedResponse>(url.toString(), {
           timeoutMs: manifest.timeoutMs,
           signal,
         });
 
         const result = raw.indvdLandPrices;
-        if (!result || result.resultCode !== 'OK') {
-          const msg = result?.resultMsg ?? 'Unknown error from land price API';
-          console.error(`[${CONNECTOR_ID}] API error: ${msg}`);
+        if (!result?.field) {
+          const msg = result?.resultMsg || raw.response?.resultMsg || 'No land price data found for PNU';
           return emptyResult(msg);
         }
 
@@ -92,14 +94,17 @@ export function createLandPriceConnector(): Connector<LandPriceInput, LandPriceO
           return emptyResult('No land price data found for PNU');
         }
 
+        const price = typeof item.pblntfPclnd === 'string'
+          ? parseInt(item.pblntfPclnd, 10)
+          : item.pblntfPclnd;
         const year = item.stdrYear ? parseInt(item.stdrYear, 10) : new Date().getFullYear() - 1;
 
         return {
           data: {
-            officialPricePerSqm: item.pblntfPclnd,
+            officialPricePerSqm: price,
             year,
-            slopeCode: item.tpgrphHgCd ?? null,
-            shapeCode: item.tpgrphFrmCd ?? null,
+            slopeCode: null,
+            shapeCode: null,
           },
           rawSnapshotId: `landprice-${Date.now()}`,
           observedAt: new Date().toISOString(),

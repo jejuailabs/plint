@@ -1,6 +1,6 @@
 'use client';
 
-import { Environment, Grid, OrbitControls, Text } from '@react-three/drei';
+import { Grid, OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Suspense, useMemo } from 'react';
 import * as THREE from 'three';
@@ -85,20 +85,20 @@ function UrbanContext() {
     <group>
       {/* Ground plane */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[48, 48]} />
+        <planeGeometry args={[64, 64]} />
         <meshStandardMaterial color="#0a1a2a" roughness={0.88} metalness={0.08} />
       </mesh>
       {/* Roads */}
       <mesh position={[0, 0.04, 0]} receiveShadow>
-        <boxGeometry args={[44, 0.04, 2.2]} />
+        <boxGeometry args={[60, 0.04, 2.2]} />
         <meshStandardMaterial color="#1e3a52" roughness={0.92} />
       </mesh>
       <mesh position={[-7.2, 0.04, 0]} receiveShadow>
-        <boxGeometry args={[1.5, 0.04, 44]} />
+        <boxGeometry args={[1.5, 0.04, 60]} />
         <meshStandardMaterial color="#1e3a52" roughness={0.92} />
       </mesh>
       <mesh position={[7, 0.04, 0]} receiveShadow>
-        <boxGeometry args={[1.5, 0.04, 44]} />
+        <boxGeometry args={[1.5, 0.04, 60]} />
         <meshStandardMaterial color="#1e3a52" roughness={0.92} />
       </mesh>
       {/* Parcel boundary (lime outline) */}
@@ -206,7 +206,7 @@ function Scene({ scenario, context }: { scenario?: DevelopmentScenario; context?
   return (
     <>
       <color attach="background" args={['#060e18']} />
-      <fog attach="fog" args={['#060e18', 28, 60]} />
+      <fog attach="fog" args={['#060e18', 35, 72]} />
       <ambientLight intensity={0.8} />
       <hemisphereLight args={['#b0d8f5', '#050d16', 0.9]} />
       <directionalLight position={[6, 13, 6]} intensity={3.5} color="#d4f0ff" castShadow />
@@ -217,7 +217,7 @@ function Scene({ scenario, context }: { scenario?: DevelopmentScenario; context?
       <ContextBuildings context={context} />
       <Grid
         position={[0, 0.015, 0]}
-        args={[48, 48]}
+        args={[64, 64]}
         cellSize={0.75}
         cellThickness={0.25}
         cellColor="#0e3a50"
@@ -228,12 +228,11 @@ function Scene({ scenario, context }: { scenario?: DevelopmentScenario; context?
         fadeStrength={1.4}
         infiniteGrid
       />
-      <Environment preset="city" />
       <OrbitControls
         target={[0, 0.6, 0]}
         enablePan={false}
-        minDistance={13}
-        maxDistance={28}
+        minDistance={18}
+        maxDistance={38}
         minPolarAngle={0.65}
         maxPolarAngle={1.25}
         autoRotate
@@ -248,11 +247,11 @@ export type ParcelSceneProps = { address: string; scenario?: DevelopmentScenario
 export function ParcelScene({ address, scenario, context }: ParcelSceneProps) {
   return (
     <div className="absolute inset-0 overflow-hidden rounded-[inherit]" aria-label={`${address} 3D 개발 시나리오`}>
-      <Canvas shadows camera={{ position: [13, 12, 15], fov: 38 }} dpr={[1, 1.6]}>
+      <Canvas shadows camera={{ position: [20, 18, 22], fov: 42 }} dpr={[1, 1.6]}>
         <Suspense fallback={null}><Scene scenario={scenario} context={context} /></Suspense>
       </Canvas>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,transparent_40%,rgba(3,7,18,.25)_100%)]" />
-      <div className="pointer-events-none absolute bottom-5 right-5 rounded-lg border border-cyan-300/15 bg-slate-950/70 px-3 py-2 font-mono text-[9px] uppercase tracking-[.18em] text-cyan-100/80 backdrop-blur">
+      <div className="pointer-events-none absolute right-5 top-5 rounded-lg border border-cyan-300/15 bg-slate-950/70 px-3 py-2 font-mono text-[9px] uppercase tracking-[.18em] text-cyan-100/80 backdrop-blur">
         Urban context · mock map
       </div>
     </div>

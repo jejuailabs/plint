@@ -64,6 +64,9 @@ export function createCadastralBoundaryConnector(): Connector<CadastralBoundaryI
       url.searchParams.set('filter', `<Filter><PropertyIsEqualTo><PropertyName>pnu</PropertyName><Literal>${pnu}</Literal></PropertyIsEqualTo></Filter>`);
       url.searchParams.set('maxFeatures', '1');
       url.searchParams.set('key', apiKey);
+      if (process.env.VWORLD_DOMAIN) {
+        url.searchParams.set('domain', process.env.VWORLD_DOMAIN);
+      }
 
       try {
         const raw = await fetchWithRetry<WfsResponse>(url.toString(), {

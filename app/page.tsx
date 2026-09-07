@@ -103,7 +103,7 @@ export default function Home() {
             <Badge variant="outline" className="border-lime-300/25 bg-lime-300/10 text-lime-200">SCENARIO A</Badge>
           </div>
 
-          <div className="pointer-events-none absolute bottom-4 left-4 right-4 grid grid-cols-3 gap-2 sm:bottom-6 sm:left-6 sm:right-6 sm:gap-3">
+          <div className="pointer-events-none absolute bottom-4 left-4 right-4 z-10 grid grid-cols-3 gap-2 sm:bottom-6 sm:left-6 sm:right-6 sm:gap-3">
             {signals.map((signal) => (
               <div key={signal.label} className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-3 backdrop-blur-xl sm:px-4">
                 <p className="truncate text-[9px] uppercase tracking-[0.14em] text-slate-500 sm:text-[10px]">{signal.label}</p>
