@@ -90,7 +90,14 @@ export function CesiumContext({
         const Cesium = await loadCesiumFromCDN();
         if (disposed || !containerRef.current) return;
 
-        viewer = new Cesium.Viewer(containerRef.current, {
+        const ionToken = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
+        const hasIon = !!ionToken;
+
+        if (hasIon) {
+          Cesium.Ion.defaultAccessToken = ionToken;
+        }
+
+        const viewerOptions: any = {
           animation: false,
           baseLayerPicker: false,
           fullscreenButton: false,
@@ -101,24 +108,48 @@ export function CesiumContext({
           sceneModePicker: false,
           selectionIndicator: false,
           timeline: false,
-          baseLayer: new Cesium.ImageryLayer(
+          requestRenderMode: true,
+          maximumRenderTimeChange: Infinity,
+        };
+
+        if (!hasIon) {
+          viewerOptions.baseLayer = new Cesium.ImageryLayer(
             new Cesium.OpenStreetMapImageryProvider({
               url: 'https://tile.openstreetmap.org/',
             }),
-          ),
-          terrainProvider: new Cesium.EllipsoidTerrainProvider(),
-          requestRenderMode: true,
-          maximumRenderTimeChange: Infinity,
-        });
+          );
+          viewerOptions.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+        }
 
-        viewer.scene.globe.enableLighting = true;
+        viewer = new Cesium.Viewer(containerRef.current, viewerOptions);
+
+        if (hasIon) {
+          try {
+            const terrain = await Cesium.CesiumTerrainProvider.fromIonAssetId(1);
+            if (disposed) return;
+            viewer.terrainProvider = terrain;
+          } catch {
+            // terrain load failed, continue with ellipsoid
+          }
+
+          try {
+            const osmBuildings = await Cesium.Cesium3DTileset.fromIonAssetId(96188);
+            if (disposed) return;
+            viewer.scene.primitives.add(osmBuildings);
+          } catch {
+            // OSM buildings load failed, continue without
+          }
+        }
+
+        viewer.scene.globe.enableLighting = false;
         viewer.scene.backgroundColor =
           Cesium.Color.fromCssColorString('#060e18');
         if (viewer.scene.skyAtmosphere) {
-          viewer.scene.skyAtmosphere.show = false;
+          viewer.scene.skyAtmosphere.show = true;
         }
         viewer.scene.fog.enabled = true;
         viewer.scene.fog.density = 0.00015;
+        viewer.scene.globe.depthTestAgainstTerrain = true;
 
         const heightM = Math.max(
           10,
@@ -132,20 +163,22 @@ export function CesiumContext({
           Math.min(55, Math.sqrt(areaSqm ?? 480) * 0.88),
         );
 
-        // Parcel boundary
+        // Parcel boundary — clamp to ground when terrain available
         viewer.entities.add({
           name: '대상 필지',
           polygon: {
             hierarchy: Cesium.Cartesian3.fromDegreesArray(
               parcelRing(center.longitude, center.latitude, areaSqm),
             ),
-            material: Cesium.Color.LIME.withAlpha(0.2),
+            material: Cesium.Color.LIME.withAlpha(0.25),
             outline: true,
             outlineColor: Cesium.Color.fromCssColorString('#bef264'),
+            heightReference: hasIon ? Cesium.HeightReference.CLAMP_TO_GROUND : undefined,
+            classificationType: hasIon ? Cesium.ClassificationType.BOTH : undefined,
           },
         });
 
-        // Per-floor building mass
+        // Per-floor building mass — relative to ground when terrain available
         let yAccum = 0;
         for (const floor of scenario.floors) {
           const scale = floor.footprintScale ?? 1;
@@ -166,6 +199,7 @@ export function CesiumContext({
               material: Cesium.Color.fromCssColorString('#bff7ff').withAlpha(0.65),
               outline: true,
               outlineColor: Cesium.Color.fromCssColorString('#22d3ee').withAlpha(0.7),
+              heightReference: hasIon ? Cesium.HeightReference.RELATIVE_TO_GROUND : undefined,
             },
           });
           yAccum += floorH;
@@ -184,6 +218,7 @@ export function CesiumContext({
             color: Cesium.Color.fromCssColorString('#bef264'),
             outlineColor: Cesium.Color.fromCssColorString('#060e18'),
             outlineWidth: 2,
+            heightReference: hasIon ? Cesium.HeightReference.RELATIVE_TO_GROUND : undefined,
           },
           label: {
             text: `${scenario.name}\n${scenario.floors.length}F · ${Math.round(heightM)}m`,
@@ -194,19 +229,20 @@ export function CesiumContext({
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             pixelOffset: new Cesium.Cartesian2(0, -14),
+            heightReference: hasIon ? Cesium.HeightReference.RELATIVE_TO_GROUND : undefined,
           },
         });
 
-        // Camera
+        // Camera — lower angle for more dramatic view with terrain
         viewer.camera.flyTo({
           destination: Cesium.Cartesian3.fromDegrees(
             center.longitude,
             center.latitude,
-            620,
+            hasIon ? 350 : 620,
           ),
           orientation: {
             heading: Cesium.Math.toRadians(25),
-            pitch: Cesium.Math.toRadians(-50),
+            pitch: Cesium.Math.toRadians(hasIon ? -35 : -50),
             roll: 0,
           },
           duration: 0,
