@@ -25,7 +25,7 @@ export async function GET() {
     const { data, error: dbError } = await supabase
       .from('sites')
       .select(
-        '*, analyses(id, status, completed_at, report_generated_at:result->aiReport->>generatedAt)',
+        '*, analyses(id, status, completed_at, result, report_generated_at:result->aiReport->>generatedAt)',
       )
       .eq('user_id', claims.userId)
       .order('created_at', { ascending: false });
@@ -54,9 +54,15 @@ export async function GET() {
             id: string;
             status: string;
             completed_at: string | null;
+            result: { scenarios?: unknown[] } | null;
           }[]
         )
-          .filter((a) => a.status === 'completed')
+          .filter(
+            (a) =>
+              a.status === 'completed' &&
+              Array.isArray(a.result?.scenarios) &&
+              a.result.scenarios.length > 0,
+          )
           .sort((a, b) =>
             (b.completed_at ?? '').localeCompare(a.completed_at ?? ''),
           )[0];

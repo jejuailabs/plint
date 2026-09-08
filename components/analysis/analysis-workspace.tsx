@@ -728,7 +728,7 @@ export function AnalysisWorkspace() {
           </div>
         )}
 
-        {status === 'ready' && (!result || !scenario) && (
+        {status === 'ready' && !result && (
           <div className="grid min-h-[calc(100vh-64px)] place-items-center px-6">
             <Card className="max-w-md border border-amber-300/20 bg-amber-300/5 text-white">
               <CardContent className="flex flex-col items-center py-8 text-center">
@@ -750,7 +750,7 @@ export function AnalysisWorkspace() {
           </div>
         )}
 
-        {status === 'ready' && result && scenario && (
+        {status === 'ready' && result && (
           <div className="mx-auto grid max-w-[1600px] gap-4 p-4 sm:p-6 xl:grid-cols-[310px_minmax(0,1fr)_330px]">
             <aside className="space-y-4">
               <Card className="border border-white/8 bg-white/[0.035] text-white">
@@ -906,7 +906,7 @@ export function AnalysisWorkspace() {
 
             <section className="analysis-scene-frame min-h-[620px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/30">
               <div className="relative h-[520px] xl:h-[calc(100vh-205px)] xl:min-h-[620px]">
-                {sceneMode === 'massing' ? (
+                {scenario && sceneMode === 'massing' ? (
                   <LazyAnalysisScene
                     address={address}
                     center={
@@ -920,7 +920,7 @@ export function AnalysisWorkspace() {
                     scenario={scenario}
                     context={result.data.context}
                   />
-                ) : (
+                ) : scenario ? (
                   <LazyCesiumContext
                     address={address}
                     center={
@@ -935,25 +935,43 @@ export function AnalysisWorkspace() {
                     context={result.data.context}
                     glbDataUrl={blenderGlb}
                   />
+                ) : (
+                  <div className="grid h-full place-items-center px-8 text-center">
+                    <div className="max-w-sm rounded-2xl border border-amber-300/20 bg-slate-950/75 p-6 backdrop-blur">
+                      <AlertTriangle className="mx-auto size-7 text-amber-200" />
+                      <p className="mt-3 text-sm font-medium text-white">
+                        3D 매스·도시지형을 만들 수 없습니다.
+                      </p>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        VWorld에서 필지 경계 또는 면적을 받지 못했습니다.
+                        주소·규제·건축물·시장 자료는 계속 표시됩니다.
+                      </p>
+                    </div>
+                  </div>
                 )}
                 <div className="pointer-events-none absolute left-5 top-5">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                    {sceneMode === 'massing'
-                      ? 'Interactive massing'
-                      : 'Geographic context'}
+                    {!scenario
+                      ? '필지 공간자료 미연결'
+                      : sceneMode === 'massing'
+                        ? 'Interactive massing'
+                        : 'Geographic context'}
                   </p>
                   <p className="mt-1 text-base font-medium text-white">
-                    {sceneMode === 'massing'
-                      ? scenarioId === 'custom'
-                        ? '세부설정 시나리오'
-                        : `${scenario.name} 시나리오`
-                      : '도시·지형 컨텍스트'}
+                    {!scenario
+                      ? '필지 공간자료 미연결'
+                      : sceneMode === 'massing'
+                        ? scenarioId === 'custom'
+                          ? '세부설정 시나리오'
+                          : `${scenario.name} 시나리오`
+                        : '도시·지형 컨텍스트'}
                   </p>
                 </div>
                 <div className="absolute right-5 top-5 z-10 flex rounded-xl border border-white/10 bg-slate-950/70 p-1 backdrop-blur">
                   <button
                     type="button"
                     onClick={() => setSceneMode('massing')}
+                    disabled={!scenario}
                     className={`rounded-lg px-3 py-2 text-xs font-medium transition ${sceneMode === 'massing' ? 'bg-cyan-300 text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                   >
                     3D 매스
@@ -961,46 +979,49 @@ export function AnalysisWorkspace() {
                   <button
                     type="button"
                     onClick={() => setSceneMode('context')}
+                    disabled={!scenario}
                     className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition ${sceneMode === 'context' ? 'bg-cyan-300 text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                   >
                     <Globe2 className="size-3.5" />
                     도시·지형
                   </button>
                 </div>
-                <div className="absolute bottom-5 left-5 right-5 flex gap-2 overflow-x-auto pb-1">
-                  {result.data.scenarios.map((item) => (
-                    <ScenarioButton
-                      key={item.id}
-                      scenario={item}
-                      active={item.id === scenario.id}
-                      onClick={() => setScenarioId(item.id)}
-                    />
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setScenarioId('custom')}
-                    className={`flex min-w-[132px] items-center gap-2 rounded-xl border px-4 py-3 text-left transition ${scenarioId === 'custom' ? 'border-cyan-300/45 bg-cyan-300/10 shadow-[0_0_28px_rgba(34,211,238,.08)]' : 'border-white/8 bg-white/[0.035] hover:bg-white/[0.06]'}`}
-                  >
-                    <Settings2
-                      className={`size-4 ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-400'}`}
-                    />
-                    <div>
-                      <span
-                        className={`block text-sm font-medium ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-300'}`}
-                      >
-                        세부설정
-                      </span>
-                      <span className="mt-1 block text-xs text-slate-500">
-                        직접 조정
-                      </span>
-                    </div>
-                  </button>
-                </div>
+                {scenario && (
+                  <div className="absolute bottom-5 left-5 right-5 flex gap-2 overflow-x-auto pb-1">
+                    {result.data.scenarios.map((item) => (
+                      <ScenarioButton
+                        key={item.id}
+                        scenario={item}
+                        active={item.id === scenario.id}
+                        onClick={() => setScenarioId(item.id)}
+                      />
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setScenarioId('custom')}
+                      className={`flex min-w-[132px] items-center gap-2 rounded-xl border px-4 py-3 text-left transition ${scenarioId === 'custom' ? 'border-cyan-300/45 bg-cyan-300/10 shadow-[0_0_28px_rgba(34,211,238,.08)]' : 'border-white/8 bg-white/[0.035] hover:bg-white/[0.06]'}`}
+                    >
+                      <Settings2
+                        className={`size-4 ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-400'}`}
+                      />
+                      <div>
+                        <span
+                          className={`block text-sm font-medium ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-300'}`}
+                        >
+                          세부설정
+                        </span>
+                        <span className="mt-1 block text-xs text-slate-500">
+                          직접 조정
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
             </section>
 
             <aside className="space-y-4">
-              {scenarioId === 'custom' && result ? (
+              {scenarioId === 'custom' && scenario ? (
                 <ScenarioCustomizer
                   appliedScenario={scenario}
                   areaSqm={result.data.geometry.areaSqm.value ?? 500}
@@ -1014,7 +1035,7 @@ export function AnalysisWorkspace() {
                   }
                   onScenarioChange={setCustomScenario}
                 />
-              ) : (
+              ) : scenario ? (
                 <Card className="border border-lime-300/15 bg-lime-300/[0.045] text-white">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between text-sm">
@@ -1068,6 +1089,20 @@ export function AnalysisWorkspace() {
                         </span>
                       )}
                     </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="border border-amber-300/20 bg-amber-300/5 text-white">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <AlertTriangle className="size-4 text-amber-200" />
+                      시나리오 미산정
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-xs leading-5 text-slate-400">
+                    필지 면적 또는 경계를 받으면 건폐율·용적률 시나리오와 3D
+                    매스를 계산합니다. 다른 분석 자료는 아래에 그대로
+                    표시됩니다.
                   </CardContent>
                 </Card>
               )}
