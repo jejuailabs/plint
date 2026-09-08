@@ -30,12 +30,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { AddressSearch, type AddressResult } from '@/components/address-search';
 import { LazyAnalysisScene } from '@/components/analysis/lazy-analysis-scene';
 import { LazyCesiumContext } from '@/components/analysis/lazy-cesium-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/theme-toggle';
 import type {
   AnalysisPreviewResponse,
@@ -124,40 +124,48 @@ export function AnalysisWorkspace() {
 
   const [loadingStep, setLoadingStep] = useState(0);
 
-  const analyze = useCallback(async (nextAddress: string) => {
-    // Try loading from Supabase first (logged-in users only)
-    try {
-      const lookupRes = await fetch(`/api/analysis/lookup?address=${encodeURIComponent(nextAddress)}`);
-      if (lookupRes.ok) {
-        const lookupBody = await lookupRes.json();
-        const saved = lookupBody?.data;
-        if (saved?.result) {
-          const restored: AnalysisPreviewResponse = {
-            data: saved.result as AnalysisPreviewResponse['data'],
-            meta: { requestId: saved.analysisId, generatedAt: saved.completedAt ?? new Date().toISOString(), mode: 'hybrid' as const, durationMs: 0 },
-          };
-          setResult(restored);
-          setScenarioId('balanced');
-          setSavedAnalysisId(saved.analysisId);
-          setSaveStatus('saved');
-          setStatus('ready');
-          const center = restored.data.identity.center.value;
-          if (center) {
-            setSunlightStatus('loading');
-            fetch('/api/analysis/sunlight', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ latitude: center.latitude, longitude: center.longitude }),
-            })
-              .then((r) => r.ok ? r.json() : Promise.reject())
-              .then((d) => { setSunlight(d as SunlightData); setSunlightStatus('ready'); })
-              .catch(() => setSunlightStatus('error'));
+  const analyze = useCallback(async (nextAddress: string, forceRefresh = false) => {
+    if (!forceRefresh) {
+      try {
+        const lookupRes = await fetch(`/api/analysis/lookup?address=${encodeURIComponent(nextAddress)}`);
+        if (lookupRes.ok) {
+          const lookupBody = await lookupRes.json();
+          const saved = lookupBody?.data;
+          if (saved?.result) {
+            const restored: AnalysisPreviewResponse = {
+              data: saved.result as AnalysisPreviewResponse['data'],
+              meta: { requestId: saved.analysisId, generatedAt: saved.completedAt ?? new Date().toISOString(), mode: 'hybrid' as const, durationMs: 0 },
+            };
+            setResult(restored);
+            setScenarioId('balanced');
+            setSavedAnalysisId(saved.analysisId);
+            setSaveStatus('saved');
+            setStatus('ready');
+            const center = restored.data.identity.center.value;
+            if (center) {
+              setSunlightStatus('loading');
+              fetch('/api/analysis/sunlight', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ latitude: center.latitude, longitude: center.longitude }),
+              })
+                .then((r) => r.ok ? r.json() : Promise.reject())
+                .then((d) => { setSunlight(d as SunlightData); setSunlightStatus('ready'); })
+                .catch(() => setSunlightStatus('error'));
+            }
+            return;
           }
-          return;
         }
-      }
-    } catch { /* lookup failed, proceed with fresh analysis */ }
+      } catch { /* lookup failed, proceed with fresh analysis */ }
+    }
 
+    setSaveStatus('idle');
+    setSavedAnalysisId(null);
+    setSunlight(null);
+    setSunlightStatus('idle');
+    setBlenderPreview(null);
+    setBlenderGlb(null);
+    setExportStatus('idle');
     setStatus('loading');
     setLoadingStep(0);
     setMessage('주소를 해석하고 있습니다...');
@@ -336,18 +344,18 @@ export function AnalysisWorkspace() {
     }
   }, [result, scenario, savedAnalysisId, exportStatus, pollBlenderJob]);
 
-  function submit(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalized = query.trim();
-    if (!normalized) return;
-    setAddress(normalized);
+  const handleAddressSelect = useCallback((result: AddressResult) => {
+    const selected = result.jibunAddress || result.roadAddress;
+    if (!selected) return;
+    setAddress(selected);
+    setQuery(selected);
     window.history.replaceState(
       null,
       '',
-      `/analysis?address=${encodeURIComponent(normalized)}`,
+      `/analysis?address=${encodeURIComponent(selected)}`,
     );
-    void analyze(normalized);
-  }
+    void analyze(selected);
+  }, [analyze]);
 
   return (
     <main className="analysis-readable site-shell min-h-screen text-white">
@@ -366,26 +374,24 @@ export function AnalysisWorkspace() {
               PLINT
             </span>
           </div>
-          <form
-            onSubmit={submit}
-            className="mx-auto flex w-full max-w-2xl items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-1.5"
-          >
-            <MapPinned className="ml-2 size-4 shrink-0 text-cyan-300" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+          <div className="mx-auto flex w-full max-w-2xl items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-1.5">
+            <AddressSearch
+              onSelect={handleAddressSelect}
               placeholder="지번 또는 도로명주소를 입력하세요"
-              className="h-9 border-0 bg-transparent text-sm text-white focus-visible:ring-0"
-              aria-label="분석 주소"
+              defaultValue={query}
+              className="flex-1"
+              inputClassName="h-9 text-sm"
             />
             <Button
-              type="submit"
+              type="button"
               size="sm"
-              className="h-9 bg-cyan-300 px-4 text-slate-950 hover:bg-cyan-200"
+              disabled={!address}
+              onClick={() => { if (address) void analyze(address, true); }}
+              className="h-9 shrink-0 bg-cyan-300 px-4 text-slate-950 hover:bg-cyan-200"
             >
               재분석
             </Button>
-          </form>
+          </div>
           <div
             className="hidden items-center rounded-lg border border-white/10 bg-white/[0.045] p-1 sm:flex"
             aria-label="분석 화면 확대 및 축소"
@@ -437,32 +443,12 @@ export function AnalysisWorkspace() {
               <p className="mt-2 text-sm text-slate-400">
                 분석할 대지의 지번 또는 도로명주소를 입력하세요
               </p>
-              <form
-                onSubmit={submit}
-                className="mx-auto mt-8 rounded-2xl border border-white/12 bg-white/[0.065] p-2 shadow-[0_24px_90px_rgba(0,0,0,.32)] backdrop-blur-xl"
-              >
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <div className="flex flex-1 items-center gap-2 px-2">
-                    <MapPinned className="size-4 shrink-0 text-cyan-300" />
-                    <Input
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      placeholder="지번 또는 도로명주소를 입력하세요"
-                      className="h-12 flex-1 border-0 bg-transparent px-2 text-[15px] text-white shadow-none placeholder:text-slate-500 focus-visible:ring-0"
-                      autoFocus
-                      aria-label="분석 주소"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={!query.trim()}
-                    className="h-12 rounded-xl bg-cyan-300 px-6 text-slate-950 hover:bg-cyan-200 disabled:opacity-50"
-                  >
-                    <Sparkles className="mr-1 size-4" />
-                    분석 시작
-                  </Button>
-                </div>
-              </form>
+              <div className="mx-auto mt-8 rounded-2xl border border-white/12 bg-white/[0.065] p-2 shadow-[0_24px_90px_rgba(0,0,0,.32)] backdrop-blur-xl">
+                <AddressSearch
+                  onSelect={handleAddressSelect}
+                  placeholder="도로명, 지번, 건물명으로 검색"
+                />
+              </div>
               <p className="mt-4 text-xs text-slate-600">
                 예: 서울특별시 강남구 역삼동 123-45
               </p>

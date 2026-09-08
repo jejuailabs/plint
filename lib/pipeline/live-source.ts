@@ -23,6 +23,10 @@ import { createLandUsePlanConnector } from '@/lib/external-apis/connectors/land-
 import type { LandUsePlanOutput } from '@/lib/external-apis/connectors/land-use-plan';
 import { createCadastralBoundaryConnector } from '@/lib/external-apis/connectors/cadastral-boundary';
 import type { CadastralBoundaryOutput } from '@/lib/external-apis/connectors/cadastral-boundary';
+import { createContextBuildingsConnector } from '@/lib/external-apis/connectors/context-buildings';
+import type { ContextBuildingsOutput } from '@/lib/external-apis/connectors/context-buildings';
+import { createLandCharacteristicsConnector } from '@/lib/external-apis/connectors/land-characteristics';
+import type { LandCharacteristicsOutput } from '@/lib/external-apis/connectors/land-characteristics';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,6 +40,8 @@ export type LiveSourceData = {
   weather: ConnectorResult<KmaWeatherOutput>;
   landUsePlan: ConnectorResult<LandUsePlanOutput>;
   cadastralBoundary: ConnectorResult<CadastralBoundaryOutput>;
+  contextBuildings: ConnectorResult<ContextBuildingsOutput>;
+  landCharacteristics: ConnectorResult<LandCharacteristicsOutput>;
   pnuCode: string | null;
   adminCode: string | null;
   warnings: string[];
@@ -119,6 +125,8 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
       weather: emptyResult<KmaWeatherOutput>(skip),
       landUsePlan: emptyResult<LandUsePlanOutput>(skip),
       cadastralBoundary: emptyResult<CadastralBoundaryOutput>(skip),
+      contextBuildings: emptyResult<ContextBuildingsOutput>(skip),
+      landCharacteristics: emptyResult<LandCharacteristicsOutput>(skip),
       pnuCode: null,
       adminCode: null,
       warnings: [...juso.warnings, '주소 해석 실패로 후속 조회를 건너뛰었습니다.'],
@@ -147,12 +155,16 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
 
   // Step 3: parallel downstream calls (transactions query 6 months)
   const txConnector = createLandTransactionConnector();
-  const [bldg, price, wx, lup, cad, ...txSettled] = await Promise.allSettled([
+  const lat0 = juso.data.latitude;
+  const lon0 = juso.data.longitude;
+  const [bldg, price, wx, lup, cad, ctxBldg, landChar, ...txSettled] = await Promise.allSettled([
     createBuildingLedgerConnector().execute({ sigunguCode, bjdongCode, bun, ji }),
     createLandPriceConnector().execute({ pnuCode: pnu }),
     createKmaWeatherConnector().execute({ stationId: stnId, startDate: `${lastYear}0101`, endDate: `${lastYear}1231` }),
     createLandUsePlanConnector().execute({ pnuCode: pnu }),
     createCadastralBoundaryConnector().execute({ pnuCode: pnu }),
+    (lat0 && lon0) ? createContextBuildingsConnector().execute({ centerLat: lat0, centerLon: lon0, radiusM: 150 }) : Promise.resolve(emptyResult<ContextBuildingsOutput>('좌표 미확인으로 주변 건물 조회 불가')),
+    createLandCharacteristicsConnector().execute({ pnuCode: pnu }),
     ...txMonths.map((ym) => txConnector.execute({ lawdCode: sigunguCode, dealYearMonth: ym })),
   ]);
 
@@ -161,6 +173,8 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
   const weather = unwrapSettled(wx, '기상 조회 실패');
   const landUsePlan = unwrapSettled(lup, '토지이용계획 조회 실패');
   const cadastralBoundary = unwrapSettled(cad, '연속지적도 조회 실패');
+  const contextBuildings = unwrapSettled(ctxBldg, '주변 건물 조회 실패');
+  const landCharacteristics = unwrapSettled(landChar, '토지특성 조회 실패');
 
   // Merge 6 months of transactions into a single result
   const allTxItems: LandTransactionItem[] = [];
@@ -180,7 +194,7 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
     ? { data: allTxItems, rawSnapshotId: txSnapshot, observedAt: txObserved, warnings: txWarnings }
     : { data: null, rawSnapshotId: txSnapshot, observedAt: txObserved, warnings: txWarnings.length ? txWarnings : ['6개월간 거래 내역 없음'] };
 
-  for (const r of [building, landPrice, transactions, weather, landUsePlan, cadastralBoundary]) {
+  for (const r of [building, landPrice, transactions, weather, landUsePlan, cadastralBoundary, contextBuildings, landCharacteristics]) {
     if (!r.data && r.warnings.length) warnings.push(...r.warnings);
   }
 
@@ -196,5 +210,5 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
     }
   }
 
-  return { juso, building, landPrice, transactions, weather, landUsePlan, cadastralBoundary, pnuCode: pnu, adminCode, warnings };
+  return { juso, building, landPrice, transactions, weather, landUsePlan, cadastralBoundary, contextBuildings, landCharacteristics, pnuCode: pnu, adminCode, warnings };
 }

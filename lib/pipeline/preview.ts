@@ -200,6 +200,19 @@ function slopeFromCode(code: string | null): number | null {
   return map[code] ?? null;
 }
 
+/** Map road-side code to approximate road width in meters. */
+function roadWidthFromCode(code: string | null): number | null {
+  if (!code) return null;
+  const map: Record<string, number> = {
+    '01': 25, '02': 25, '03': 25,
+    '04': 15, '05': 15,
+    '06': 8, '07': 8,
+    '08': 4, '09': 4,
+    '10': 0, '11': 25,
+  };
+  return map[code] ?? null;
+}
+
 /** Compute median price-per-sqm from transaction list. */
 function medianPricePerSqm(items: { price: number; areaSqm: number }[]): number {
   const vals = items.filter((t) => t.areaSqm > 0).map((t) => t.price / t.areaSqm).sort((a, b) => a - b);
@@ -219,6 +232,8 @@ async function runLivePreview(address: string): Promise<AnalysisPreviewResponse>
   const wxData = src.weather.data;
   const lupData = src.landUsePlan.data;
   const cadData = src.cadastralBoundary.data;
+  const ctxData = src.contextBuildings.data;
+  const charData = src.landCharacteristics.data;
 
   // Evidence shorthand — returns [] when the connector produced no data.
   const ev = (id: string, r: { data: unknown; rawSnapshotId: string; observedAt: string }, c?: Evidence['confidence']) =>
@@ -288,18 +303,28 @@ async function runLivePreview(address: string): Promise<AnalysisPreviewResponse>
             ? { derivation: 'building-footprint-estimate:v1', warnings: ['건축물대장 기반 추정값입니다.'] }
             : { warnings: ['면적 정보 미확인 — 기본값 사용'] },
       ),
-      landCategory: fact('대', [], { warnings: ['토지이용계획 연결 전 기본값입니다.'] }),
+      landCategory: fact(
+        charData?.landCategory ?? '대',
+        charData?.landCategory ? ev('land-characteristics', src.landCharacteristics, 'verified') : [],
+        charData?.landCategory ? undefined : { warnings: ['토지특성 조회 실패 — 기본값 사용'] },
+      ),
       boundary: cadData
         ? fact({ type: 'Polygon' as const, coordinates: cadData.coordinates }, ev('continuous-cadastral', src.cadastralBoundary, 'verified'))
         : fact(approxBoundary(lat, lon, estimatedArea), [], {
             warnings: ['연속지적도 조회 실패 — 좌표 기반 근사 경계입니다.'],
           }),
       frontageM: fact<number>(null, [], { warnings: ['도로 데이터 연결 전 산출 불가'] }),
-      roadWidthM: fact<number>(null, [], { warnings: ['도로 데이터 연결 전 산출 불가'] }),
+      roadWidthM: fact(
+        roadWidthFromCode(charData?.roadSideCode ?? null),
+        charData?.roadSideCode ? ev('land-characteristics', src.landCharacteristics, 'derived') : [],
+        charData?.roadSideCode
+          ? { derivation: 'road-side-code:v1', warnings: [charData.roadSideName ? `도로접면: ${charData.roadSideName}` : undefined].filter(Boolean) as string[] }
+          : { warnings: ['도로 접면 정보 없음'] },
+      ),
       slopePercent: fact(
-        slopeFromCode(priceData?.slopeCode ?? null),
-        ev('land-characteristics', src.landPrice, 'derived'),
-        priceData?.slopeCode ? { derivation: 'slope-code-midpoint:v1' } : { warnings: ['경사도 정보 없음'] },
+        slopeFromCode(charData?.slopeCode ?? priceData?.slopeCode ?? null),
+        (charData?.slopeCode || priceData?.slopeCode) ? ev('land-characteristics', charData?.slopeCode ? src.landCharacteristics : src.landPrice, 'derived') : [],
+        (charData?.slopeCode || priceData?.slopeCode) ? { derivation: 'slope-code-midpoint:v1' } : { warnings: ['경사도 정보 없음'] },
       ),
     },
 
@@ -355,8 +380,14 @@ async function runLivePreview(address: string): Promise<AnalysisPreviewResponse>
         }]
       : [],
 
-    // -- context buildings (GIS building layer not connected) -----------------
-    context: [],
+    // -- context buildings (from VWorld WFS building layer) -------------------
+    context: ctxData
+      ? ctxData.map((b) => ({
+          id: b.id,
+          footprint: { type: 'Polygon' as const, coordinates: b.footprint },
+          heightM: fact(b.heightM, ev('gis-building', src.contextBuildings, 'derived')),
+        }))
+      : [],
 
     // -- market (from land-price + transactions) -----------------------------
     market: {
@@ -415,7 +446,7 @@ async function runLivePreview(address: string): Promise<AnalysisPreviewResponse>
 
   // Determine mode: live if primary connectors returned data, hybrid if partial.
   const primaryOk = !!(jusoData && bldgData && priceData && txData);
-  const anyOk = !!(jusoData || bldgData || priceData || txData || wxData || cadData);
+  const anyOk = !!(jusoData || bldgData || priceData || txData || wxData || cadData || ctxData || charData);
 
   return {
     data,

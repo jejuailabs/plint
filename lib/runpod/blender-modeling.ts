@@ -1,5 +1,7 @@
 import 'server-only';
 
+export type MaterialPreset = 'residential' | 'commercial' | 'mixed' | 'office';
+
 export type BlenderModelingInput = {
   analysisId: string;
   address: string;
@@ -10,16 +12,26 @@ export type BlenderModelingInput = {
     floors: number;
     buildingCoveragePercent: number;
     floorAreaRatioPercent: number;
+    floorHeights?: number[];
   };
+  material?: MaterialPreset;
+  renderAngles?: ('birdseye' | 'perspective' | 'front' | 'side')[];
 };
 
 export type RunpodJobStatus = 'IN_QUEUE' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'TIMED_OUT';
 
+export type RenderView = {
+  angle: 'birdseye' | 'perspective' | 'front' | 'side';
+  mimeType: 'image/png';
+  base64: string;
+};
+
 export type RunpodBlenderResult = {
-  formatVersion: 'plint-blender-v1';
-  renderer: 'blender-eevee';
+  formatVersion: 'plint-blender-v1' | 'plint-blender-v2';
+  renderer: 'blender-eevee' | 'blender-cycles';
   model: { mimeType: 'model/gltf-binary'; base64: string };
   preview: { mimeType: 'image/png'; base64: string };
+  views?: RenderView[];
   metrics: { floors: number; grossFloorAreaSqm: number; renderWidth: number; renderHeight: number };
 };
 

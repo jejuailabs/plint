@@ -1,7 +1,7 @@
 'use client';
 
-import { AlertTriangle, LoaderCircle, MapPinned } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { AlertTriangle, ChevronDown, ChevronUp, LoaderCircle, MapPinned, Minus, Plus, RotateCcw, RotateCw } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { DevelopmentScenario } from '@/lib/domain/parcel-intelligence';
 
@@ -73,8 +73,24 @@ export function CesiumContext({
   glbDataUrl,
 }: CesiumContextProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<any>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const orbitCamera = useCallback((deltaHeading: number, deltaPitch: number, deltaZoom: number) => {
+    const v = viewerRef.current;
+    if (!v || v.isDestroyed()) return;
+    const cam = v.camera;
+    if (deltaHeading) cam.setView({
+      orientation: { heading: cam.heading + deltaHeading, pitch: cam.pitch, roll: cam.roll },
+    });
+    if (deltaPitch) cam.setView({
+      orientation: { heading: cam.heading, pitch: Math.max(-Math.PI / 2, Math.min(-0.05, cam.pitch + deltaPitch)), roll: cam.roll },
+    });
+    if (deltaZoom > 0) cam.moveForward(deltaZoom);
+    if (deltaZoom < 0) cam.moveBackward(-deltaZoom);
+    v.scene.requestRender();
+  }, []);
 
   const isValidKoreaCoord = center.latitude >= 33 && center.latitude <= 39 && center.longitude >= 124 && center.longitude <= 132;
 
@@ -120,27 +136,54 @@ export function CesiumContext({
               url: 'https://tile.openstreetmap.org/',
             }),
           );
-          viewerOptions.terrainProvider = new Cesium.EllipsoidTerrainProvider();
         }
+        viewerOptions.terrainProvider = new Cesium.EllipsoidTerrainProvider();
 
         viewer = new Cesium.Viewer(containerRef.current, viewerOptions);
+        viewerRef.current = viewer;
 
         if (hasIon) {
-          try {
-            const terrain = await Cesium.CesiumTerrainProvider.fromIonAssetId(1);
-            if (disposed) return;
-            viewer.terrainProvider = terrain;
-          } catch {
-            // terrain load failed, continue with ellipsoid
-          }
 
-          try {
-            const osmBuildings = await Cesium.Cesium3DTileset.fromIonAssetId(96188);
-            if (disposed) return;
-            viewer.scene.primitives.add(osmBuildings);
-          } catch {
-            // OSM buildings load failed, continue without
-          }
+          // Load 3D building tilesets in background — don't block entity creation
+          void (async () => {
+            let loaded = false;
+
+            // Attempt 1: Google 3D Tiles via Cesium Ion (asset 2275207)
+            try {
+              const google3D = await Cesium.Cesium3DTileset.fromIonAssetId(2275207);
+              if (!disposed && !viewer.isDestroyed()) {
+                viewer.scene.primitives.add(google3D);
+                viewer.scene.requestRender();
+                loaded = true;
+              }
+            } catch { /* not available */ }
+
+            // Attempt 2: Google 3D Tiles via direct API key
+            if (!loaded && !disposed) {
+              const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+              if (googleKey && Cesium.createGooglePhotorealistic3DTileset) {
+                try {
+                  const google3D = await Cesium.createGooglePhotorealistic3DTileset({ key: googleKey });
+                  if (!disposed && !viewer.isDestroyed()) {
+                    viewer.scene.primitives.add(google3D);
+                    viewer.scene.requestRender();
+                    loaded = true;
+                  }
+                } catch { /* not available */ }
+              }
+            }
+
+            // Attempt 3: Fall back to OSM 3D Buildings
+            if (!loaded && !disposed) {
+              try {
+                const osmBuildings = await Cesium.Cesium3DTileset.fromIonAssetId(96188);
+                if (!disposed && !viewer.isDestroyed()) {
+                  viewer.scene.primitives.add(osmBuildings);
+                  viewer.scene.requestRender();
+                }
+              } catch { /* continue without buildings */ }
+            }
+          })();
         }
 
         viewer.scene.globe.enableLighting = false;
@@ -258,16 +301,19 @@ export function CesiumContext({
           }
         }
 
-        // Camera — lower angle for more dramatic view with terrain
+        // Camera — offset south-east so the target area is centered in view
+        const camOffsetM = 120;
+        const camLatOff = camOffsetM / 111_320;
+        const camLonOff = camOffsetM / (111_320 * Math.cos((center.latitude * Math.PI) / 180));
         viewer.camera.flyTo({
           destination: Cesium.Cartesian3.fromDegrees(
-            center.longitude,
-            center.latitude,
-            hasIon ? 350 : 620,
+            center.longitude + camLonOff,
+            center.latitude - camLatOff,
+            hasIon ? 200 : 620,
           ),
           orientation: {
-            heading: Cesium.Math.toRadians(25),
-            pitch: Cesium.Math.toRadians(hasIon ? -35 : -50),
+            heading: Cesium.Math.toRadians(330),
+            pitch: Cesium.Math.toRadians(hasIon ? -40 : -50),
             roll: 0,
           },
           duration: 0,
@@ -288,6 +334,7 @@ export function CesiumContext({
     void initialize();
     return () => {
       disposed = true;
+      viewerRef.current = null;
       try {
         if (viewer && !viewer.isDestroyed()) viewer.destroy();
       } catch {
@@ -320,6 +367,27 @@ export function CesiumContext({
               {isValidKoreaCoord ? (errorMsg || '네트워크 또는 WebGL 상태를 확인해 주세요.') : '주소의 좌표 데이터가 제공되지 않아 지도를 표시할 수 없습니다.'}
             </p>
           </div>
+        </div>
+      )}
+      {status === 'ready' && (
+        <div className="absolute right-3 top-1/2 z-[100] flex -translate-y-1/2 flex-col gap-1 pointer-events-auto">
+          {[
+            { icon: <RotateCcw className="size-3.5" />, label: '좌회전', action: () => orbitCamera(-0.15, 0, 0) },
+            { icon: <RotateCw className="size-3.5" />, label: '우회전', action: () => orbitCamera(0.15, 0, 0) },
+            { icon: <ChevronUp className="size-3.5" />, label: '위로', action: () => orbitCamera(0, 0.1, 0) },
+            { icon: <ChevronDown className="size-3.5" />, label: '아래로', action: () => orbitCamera(0, -0.1, 0) },
+            { icon: <Plus className="size-3.5" />, label: '확대', action: () => orbitCamera(0, 0, 50) },
+            { icon: <Minus className="size-3.5" />, label: '축소', action: () => orbitCamera(0, 0, -50) },
+          ].map((btn) => (
+            <button
+              key={btn.label}
+              onClick={btn.action}
+              title={btn.label}
+              className="grid size-8 place-items-center rounded-lg border border-slate-600/40 bg-slate-900/80 text-slate-300 backdrop-blur transition-colors hover:bg-slate-700/80 hover:text-white"
+            >
+              {btn.icon}
+            </button>
+          ))}
         </div>
       )}
       <div className="pointer-events-none absolute bottom-5 right-5 flex items-center gap-2 rounded-lg border border-cyan-300/15 bg-slate-950/75 px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] text-cyan-100/80 backdrop-blur">
