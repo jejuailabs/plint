@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, FolderOpen, Layers, MapPin, Plus } from 'lucide-react';
+import { Calendar, FolderOpen, MapPin, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -11,8 +11,6 @@ type Site = {
   id: string;
   jibun_address: string;
   created_at: string;
-  analysis_count: number;
-  last_analysis_at: string | null;
 };
 
 type SitesResponse = {
@@ -27,7 +25,7 @@ function formatDate(iso: string) {
 function SiteCard({ site }: { site: Site }) {
   return (
     <Link
-      href={`/dashboard/analysis/${site.id}`}
+      href={`/analysis?address=${encodeURIComponent(site.jibun_address)}`}
       className="group rounded-2xl border border-white/8 bg-white/[0.035] p-5 transition hover:border-white/15 hover:bg-white/[0.06]"
     >
       <div className="flex items-start justify-between">
@@ -35,7 +33,7 @@ function SiteCard({ site }: { site: Site }) {
           <MapPin className="size-4 text-cyan-300" />
         </div>
         <span className="text-[10px] uppercase tracking-[0.14em] text-slate-600">
-          {site.analysis_count}건 분석
+          프로젝트 열기
         </span>
       </div>
       <p className="mt-4 text-sm font-medium text-white group-hover:text-cyan-100">
@@ -44,11 +42,7 @@ function SiteCard({ site }: { site: Site }) {
       <div className="mt-3 flex items-center gap-3 text-[11px] text-slate-500">
         <span className="flex items-center gap-1">
           <Calendar className="size-3" />
-          {site.last_analysis_at ? formatDate(site.last_analysis_at) : formatDate(site.created_at)}
-        </span>
-        <span className="flex items-center gap-1">
-          <Layers className="size-3" />
-          {site.analysis_count}건
+          {formatDate(site.created_at)}
         </span>
       </div>
     </Link>
@@ -79,7 +73,7 @@ function EmptyState() {
       <p className="mt-2 max-w-sm text-sm text-slate-500">
         분석할 대지의 지번주소를 입력하면 필지 데이터, 규제 검토, 시장 분석, 3D 시나리오를 자동으로 생성합니다.
       </p>
-      <Link href="/dashboard/new">
+      <Link href="/dashboard#new-project">
         <Button className="mt-6 h-10 bg-lime-300 px-5 text-slate-950 hover:bg-lime-200">
           <Plus className="size-4" />
           새 프로젝트 시작
@@ -101,7 +95,7 @@ export function SiteCardGrid() {
       setSites(payload.data ?? []);
       setStatus('ready');
     } catch {
-      setStatus('ready');
+      setStatus('error');
       setSites([]);
     }
   }, []);
@@ -114,6 +108,13 @@ export function SiteCardGrid() {
   }, [fetchSites]);
 
   if (status === 'loading') return <SkeletonCards />;
+
+  if (status === 'error') return (
+    <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/5 p-6">
+      <p className="text-sm text-rose-200">저장된 프로젝트를 불러오지 못했습니다.</p>
+      <Button className="mt-4" onClick={() => { setStatus('loading'); void fetchSites(); }}>다시 시도</Button>
+    </div>
+  );
 
   if (sites.length === 0) return <EmptyState />;
 

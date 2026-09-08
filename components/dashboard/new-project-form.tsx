@@ -5,57 +5,28 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
 import { AddressSearch, type AddressResult } from '@/components/address-search';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 export function NewProjectForm() {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [pendingResult, setPendingResult] = useState<AddressResult | null>(null);
 
   const handleSelect = useCallback((result: AddressResult) => {
     setPendingResult(result);
   }, []);
 
-  const confirmAndStart = useCallback(async () => {
+  const confirmAndStart = useCallback(() => {
     if (!pendingResult) return;
     const normalized = (pendingResult.jibunAddress || pendingResult.roadAddress).trim();
     if (!normalized) return;
 
     setIsPending(true);
-    setErrorMessage(null);
+
     setPendingResult(null);
 
-    try {
-      const siteRes = await fetch('/api/sites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jibun_address: normalized }),
-      });
-
-      if (!siteRes.ok) {
-        const payload = await siteRes.json() as { error?: { message?: string } };
-        throw new Error(payload.error?.message ?? '프로젝트 생성에 실패했습니다.');
-      }
-
-      const { data: site } = await siteRes.json() as { data: { id: string } };
-
-      const analysisRes = await fetch('/api/analysis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ site_id: site.id }),
-      });
-
-      if (!analysisRes.ok) {
-        const payload = await analysisRes.json() as { error?: { message?: string } };
-        throw new Error(payload.error?.message ?? '분석 요청에 실패했습니다.');
-      }
-
-      const { data: analysis } = await analysisRes.json() as { data: { id: string } };
-      router.push(`/dashboard/analysis/${analysis.id}`);
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '오류가 발생했습니다.');
-      setIsPending(false);
-    }
+    router.push(`/analysis?address=${encodeURIComponent(normalized)}`);
   }, [pendingResult, router]);
 
   return (
@@ -74,18 +45,13 @@ export function NewProjectForm() {
           />
         )}
       </div>
-      {errorMessage ? (
-        <p role="alert" className="mt-4 text-center text-sm text-rose-300">
-          {errorMessage}
-        </p>
-      ) : null}
 
       {pendingResult && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingResult(null)}>
-          <div className="mx-4 w-full max-w-md rounded-2xl border border-white/12 bg-[#0c1829] p-6 shadow-[0_40px_120px_rgba(0,0,0,.6)]" onClick={(e) => e.stopPropagation()}>
+        <Dialog open onOpenChange={(open) => { if (!open) setPendingResult(null); }}>
+          <DialogContent showCloseButton={false} className="rounded-2xl border border-white/12 bg-[#0c1829] p-6 text-white sm:max-w-md">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">주소 확인</h3>
-              <button type="button" onClick={() => setPendingResult(null)} className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white">
+              <DialogTitle className="text-sm font-semibold text-white">주소 확인</DialogTitle>
+              <button type="button" aria-label="주소 확인 닫기" onClick={() => setPendingResult(null)} className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white">
                 <X className="size-4" />
               </button>
             </div>
@@ -104,7 +70,7 @@ export function NewProjectForm() {
                 </div>
               </div>
             </div>
-            <p className="mt-4 text-xs text-slate-400">이 주소로 개발 사전검토 분석을 시작합니다.</p>
+            <DialogDescription className="mt-4 text-sm text-slate-400">이 주소로 개발 사전검토 분석을 시작합니다.</DialogDescription>
             <div className="mt-5 flex gap-3">
               <button type="button" onClick={() => setPendingResult(null)} className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] py-2.5 text-sm text-slate-300 hover:bg-white/[0.08]">
                 취소
@@ -114,8 +80,8 @@ export function NewProjectForm() {
                 분석 시작
               </button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
