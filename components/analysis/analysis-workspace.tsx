@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Ruler,
   Save,
+  Settings2,
   ShieldCheck,
   Sparkles,
   Sun,
@@ -33,6 +34,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AddressSearch, type AddressResult } from '@/components/address-search';
 import { LazyAnalysisScene } from '@/components/analysis/lazy-analysis-scene';
 import { LazyCesiumContext } from '@/components/analysis/lazy-cesium-context';
+import { ScenarioCustomizer } from '@/components/analysis/scenario-customizer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,6 +106,7 @@ export function AnalysisWorkspace() {
   const [showReportConfirm, setShowReportConfirm] = useState(false);
   const [blenderPreview, setBlenderPreview] = useState<string | null>(null);
   const [blenderGlb, setBlenderGlb] = useState<string | null>(null);
+  const [customScenario, setCustomScenario] = useState<DevelopmentScenario | null>(null);
 
   const setWorkspaceZoom = useCallback((nextZoom: number) => {
     setZoom(Math.min(140, Math.max(80, nextZoom)));
@@ -247,10 +250,21 @@ export function AnalysisWorkspace() {
 
   const scenario = useMemo(
     () =>
-      result?.data.scenarios.find((item) => item.id === scenarioId) ??
-      result?.data.scenarios[0],
-    [result, scenarioId],
+      scenarioId === 'custom' && customScenario
+        ? customScenario
+        : result?.data.scenarios.find((item) => item.id === scenarioId) ??
+          result?.data.scenarios[0],
+    [result, scenarioId, customScenario],
   );
+
+  const legalLimits = useMemo(() => {
+    if (!result) return { maxCoverage: 60, maxFar: 200 };
+    const maxYield = result.data.scenarios.find((s) => s.id === 'max_yield');
+    return {
+      maxCoverage: maxYield?.buildingCoverageRatio ?? 60,
+      maxFar: maxYield?.floorAreaRatio ?? 200,
+    };
+  }, [result]);
 
   const saveToDb = useCallback(async () => {
     if (!result || saveStatus === 'saving') return;
@@ -660,7 +674,7 @@ export function AnalysisWorkspace() {
                   </p>
                   <p className="mt-1 text-base font-medium text-white">
                     {sceneMode === 'massing'
-                      ? `${scenario.name} 시나리오`
+                      ? (scenarioId === 'custom' ? '세부설정 시나리오' : `${scenario.name} 시나리오`)
                       : '도시·지형 컨텍스트'}
                   </p>
                 </div>
@@ -690,11 +704,32 @@ export function AnalysisWorkspace() {
                       onClick={() => setScenarioId(item.id)}
                     />
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => setScenarioId('custom')}
+                    className={`flex min-w-[132px] items-center gap-2 rounded-xl border px-4 py-3 text-left transition ${scenarioId === 'custom' ? 'border-cyan-300/45 bg-cyan-300/10 shadow-[0_0_28px_rgba(34,211,238,.08)]' : 'border-white/8 bg-white/[0.035] hover:bg-white/[0.06]'}`}
+                  >
+                    <Settings2 className={`size-4 ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-400'}`} />
+                    <div>
+                      <span className={`block text-sm font-medium ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-300'}`}>세부설정</span>
+                      <span className="mt-1 block text-xs text-slate-500">직접 조정</span>
+                    </div>
+                  </button>
                 </div>
               </div>
             </section>
 
             <aside className="space-y-4">
+              {scenarioId === 'custom' && result ? (
+                <ScenarioCustomizer
+                  areaSqm={result.data.geometry.areaSqm.value ?? 500}
+                  maxCoverage={legalLimits.maxCoverage}
+                  maxFar={legalLimits.maxFar}
+                  comparablePricePerSqm={result.data.market.comparableMedianPerSqm.value ?? 0}
+                  landPricePerSqm={result.data.market.officialLandPricePerSqm.value ?? 0}
+                  onScenarioChange={setCustomScenario}
+                />
+              ) : (
               <Card className="border border-lime-300/15 bg-lime-300/[0.045] text-white">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between text-sm">
@@ -738,6 +773,7 @@ export function AnalysisWorkspace() {
                   </div>
                 </CardContent>
               </Card>
+              )}
 
               <Card className="border border-white/8 bg-white/[0.035] text-white">
                 <CardHeader>
