@@ -20,7 +20,7 @@ export type AIReport = {
   outputTokens: number;
 };
 
-function buildPrompt(data: ParcelIntelligence): string {
+export function buildPrompt(data: ParcelIntelligence): string {
   const identity = data.identity;
   const geometry = data.geometry;
   const market = data.market;
@@ -69,13 +69,17 @@ ${existing.length > 0 ? existing.map((b) => `- 용도: ${b.use.value ?? '미확�
 
 ## 개발 시나리오 (3안)
 
-${scenarios.map((s) => `### ${s.name} (${s.strategy})
+${scenarios
+  .map(
+    (s) => `### ${s.name} (${s.strategy})
 - 건폐율/용적률: ${s.buildingCoverageRatio}% / ${s.floorAreaRatio}%
 - 연면적: ${s.grossFloorAreaSqm.toLocaleString('ko-KR')}㎡
 - 층수: ${s.floors.length}층
-- 예상 매출: ${(s.estimatedRevenueKrw / 100_000_000).toFixed(1)}억원
+- 예상 매출: ${s.estimatedRevenueKrw > 0 ? (s.estimatedRevenueKrw / 100_000_000).toFixed(1) + '억원' : '미산정 (0원 매출을 뜻하지 않음)'}
 - 예상 비용: ${(s.estimatedCostKrw / 100_000_000).toFixed(1)}억원
-- 예상 수익률: ${s.estimatedProfitRatePercent}%`).join('\n\n')}
+- 예상 수익률: ${s.estimatedRevenueKrw > 0 ? s.estimatedProfitRatePercent + '%' : '미산정'}`,
+  )
+  .join('\n\n')}
 
 ## 리스크 항목
 
@@ -117,8 +121,67 @@ ${risks.map((r) => `- [${r.level}] ${r.label}: ${r.finding.value ?? '미확인'}
 중요: 이 보고서는 사전검토용이며, 인허가 심의를 대체하지 않습니다. 이를 보고서 내에서도 명시해 주세요.`;
 }
 
-export async function generateAIReport(data: ParcelIntelligence): Promise<AIReport> {
-  const apiKey = process.env.CLAUDE_API_KEY;
+export async function generateAIReport(
+  data: ParcelIntelligence,
+): Promise<AIReport> {
+  // Without verified prerequisites, a grounded assessment is safer than invented legal/market conclusions.
+  const zoning = data.planning.filter((p) => p.category === 'zoning');
+  if (
+    !data.geometry.boundary.value ||
+    !data.identity.center.value ||
+    zoning.length !== 1 ||
+    zoning[0].status !== 'confirmed' ||
+    !data.market.comparableMedianPerSqm.value
+  ) {
+    const unavailable =
+      data.sourceStatus
+        ?.filter((s) => s.status === 'unavailable')
+        .map((s) => `${s.label}: ${s.detail}`)
+        .join('\n\n') ?? '원자료 추가 확인 필요';
+    return {
+      summary:
+        '현황 자료와 배치 비교안입니다. 적용 규제와 수익 모델이 확정되지 않아 개발 가능 규모·투자 수익률을 확정할 수 없습니다.',
+      feasibility: {
+        title: '개발 검토 조건',
+        body: `대지면적 ${data.geometry.areaSqm.value ?? '미확인'}㎡. 면적 출처와 경계의 일치 여부를 확인해야 합니다. 실제 필지 내부의 기하학적 배치안이며 건축선·주차·고도 조건 검증 전입니다.`,
+      },
+      regulations: {
+        title: '확인된 계획 항목',
+        body: data.planning
+          .map((p) => `${p.name}: ${p.summary.value ?? '추가 확인 필요'}`)
+          .join('\n\n'),
+      },
+      market: {
+        title: '시장 자료',
+        body: `공시지가 ${data.market.officialLandPricePerSqm.value?.toLocaleString('ko-KR') ?? '미확인'}원/㎡. 공시지가는 거래시세나 분양가격이 아닙니다. 실거래 표본·기간·용도 및 수익 모델 검증 전 매출과 수익률은 산정하지 않습니다.`,
+      },
+      risks: {
+        title: '자료 누락과 확인 절차',
+        body:
+          unavailable +
+          '\n\n' +
+          data.risks
+            .map(
+              (r) =>
+                `${r.label}: ${r.finding.value ?? '미확인'} · ${r.nextAction ?? '공식 자료/현장 확인'}`,
+            )
+            .join('\n\n'),
+      },
+      recommendation: {
+        title: '다음 검토 단계',
+        body: (
+          data.reviewNotes ?? [
+            '조례·현황측량·접도·주차·기존 건물 상태·총사업비와 수익 가정을 확인하세요.',
+          ]
+        ).join('\n\n'),
+      },
+      generatedAt: new Date().toISOString(),
+      model: '근거 기반 검토문 (AI 추론 없음)',
+      inputTokens: 0,
+      outputTokens: 0,
+    };
+  }
+  const apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('CLAUDE_API_KEY is not configured');
 
   const client = new Anthropic({ apiKey });
@@ -127,26 +190,45 @@ export async function generateAIReport(data: ParcelIntelligence): Promise<AIRepo
   const str = { type: 'string' as const };
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5',
-    max_tokens: 4096,
+    max_tokens: 8192,
     tools: [
       {
         name: 'submit_report',
-        description: '개발 타당성 분석 보고서를 제출합니다. 각 본문은 문단 구분 시 \\n\\n을 사용하세요.',
+        description:
+          '근거 기반 보고서를 제출합니다. 본문에 실제 문단 구분을 사용하세요.',
         input_schema: {
           type: 'object' as const,
           properties: {
             summary: { ...str, description: '3~4문장 핵심 요약' },
-            feasibility_body: { ...str, description: '개발 타당성 평가 본문 (3~5문단)' },
-            regulations_body: { ...str, description: '법규 검토 요약 본문 (3~5문단)' },
+            feasibility_body: {
+              ...str,
+              description: '개발 타당성 평가 본문 (3~5문단)',
+            },
+            regulations_body: {
+              ...str,
+              description: '법규 검토 요약 본문 (3~5문단)',
+            },
             market_body: { ...str, description: '시장 분석 본문 (2~4문단)' },
             risks_body: { ...str, description: '리스크 평가 본문 (3~5문단)' },
-            recommendation_body: { ...str, description: '투자 권고 본문 (3~5문단)' },
+            recommendation_body: {
+              ...str,
+              description: '투자 권고 본문 (3~5문단)',
+            },
           },
-          required: ['summary', 'feasibility_body', 'regulations_body', 'market_body', 'risks_body', 'recommendation_body'],
+          required: [
+            'summary',
+            'feasibility_body',
+            'regulations_body',
+            'market_body',
+            'risks_body',
+            'recommendation_body',
+          ],
         },
       },
     ],
     tool_choice: { type: 'tool', name: 'submit_report' },
+    system:
+      '제공된 자료만 사용하세요. 근거가 없는 법령명·기준수치·시장동향·공사비 가산율·건축가능 판정을 만들지 마세요. 지목 대는 건축허가 보장이 아닙니다. 기본값은 법정 한도가 아닙니다. 커버리지 퍼센트는 투자정보 누락률이나 정확도가 아닙니다. 미산정은 0원이 아닙니다. 미확인 항목은 확인 절차로 명시하세요.',
     messages: [{ role: 'user', content: prompt }],
   });
 
@@ -156,10 +238,28 @@ export async function generateAIReport(data: ParcelIntelligence): Promise<AIRepo
   if (!toolBlock) throw new Error('AI 응답에서 보고서를 파싱할 수 없습니다.');
 
   const raw = toolBlock.input as Record<string, string>;
+  if (
+    response.stop_reason === 'max_tokens' ||
+    [
+      'summary',
+      'feasibility_body',
+      'regulations_body',
+      'market_body',
+      'risks_body',
+      'recommendation_body',
+    ].some((key) => typeof raw[key] !== 'string' || !raw[key].trim())
+  ) {
+    throw new Error(
+      '보고서 생성이 중단되거나 필수 본문이 비어 있습니다. 다시 시도해 주세요.',
+    );
+  }
 
   const parsed = {
     summary: raw.summary ?? '',
-    feasibility: { title: '개발 타당성 평가', body: raw.feasibility_body ?? '' },
+    feasibility: {
+      title: '개발 타당성 평가',
+      body: raw.feasibility_body ?? '',
+    },
     regulations: { title: '법규 검토 요약', body: raw.regulations_body ?? '' },
     market: { title: '시장 분석', body: raw.market_body ?? '' },
     risks: { title: '리스크 평가', body: raw.risks_body ?? '' },

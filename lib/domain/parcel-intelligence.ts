@@ -90,6 +90,7 @@ export type DevelopmentScenario = {
   estimatedRevenueKrw: number;
   estimatedCostKrw: number;
   estimatedProfitRatePercent: number;
+  massing?: import('@/lib/pipeline/massing').MassPlacement;
   isPreliminaryOnly: true;
 };
 
@@ -112,6 +113,23 @@ export type ParcelIntelligence = {
   climate: ClimateProfile;
   risks: RiskFinding[];
   scenarios: DevelopmentScenario[];
+  sourceStatus?: {
+    id: string;
+    label: string;
+    status: 'available' | 'empty' | 'unavailable' | 'partial';
+    detail: string;
+    observedAt: string;
+  }[];
+  reviewNotes?: string[];
+  pipelineVersion?: number;
+  conceptImage?: import('@/lib/report/concept').ConceptImage;
+  reportImages?: {
+    massing: string;
+    cesium: string;
+    capturedAt: string;
+    scenarioId: string;
+    attribution: string;
+  };
   coverage: CoverageScore;
 };
 

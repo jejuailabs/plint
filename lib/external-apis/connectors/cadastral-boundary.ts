@@ -40,7 +40,10 @@ type WfsResponse = {
 
 const CONNECTOR_ID = 'continuous-cadastral';
 
-export function createCadastralBoundaryConnector(): Connector<CadastralBoundaryInput, CadastralBoundaryOutput> {
+export function createCadastralBoundaryConnector(): Connector<
+  CadastralBoundaryInput,
+  CadastralBoundaryOutput
+> {
   const manifest = getConnectorManifest(CONNECTOR_ID);
   if (!manifest) throw new Error(`Manifest not found: ${CONNECTOR_ID}`);
 
@@ -56,12 +59,15 @@ export function createCadastralBoundaryConnector(): Connector<CadastralBoundaryI
 
       const url = new URL('https://api.vworld.kr/req/wfs');
       url.searchParams.set('service', 'WFS');
-      url.searchParams.set('version', '2.0.0');
+      url.searchParams.set('version', '1.1.0');
       url.searchParams.set('request', 'GetFeature');
       url.searchParams.set('typeName', 'lt_c_landinfobasemap');
-      url.searchParams.set('crs', 'EPSG:4326');
+      url.searchParams.set('srsName', 'EPSG:4326');
       url.searchParams.set('output', 'application/json');
-      url.searchParams.set('filter', `<Filter><PropertyIsEqualTo><PropertyName>pnu</PropertyName><Literal>${pnu}</Literal></PropertyIsEqualTo></Filter>`);
+      url.searchParams.set(
+        'filter',
+        `<Filter><PropertyIsEqualTo><PropertyName>pnu</PropertyName><Literal>${pnu}</Literal></PropertyIsEqualTo></Filter>`,
+      );
       url.searchParams.set('maxFeatures', '1');
       url.searchParams.set('key', apiKey);
       if (process.env.VWORLD_DOMAIN) {
@@ -95,11 +101,12 @@ export function createCadastralBoundaryConnector(): Connector<CadastralBoundaryI
           return emptyResult(`Unexpected geometry type: ${geom.type}`);
         }
 
-        const areaSqm = typeof feature.properties?.a17 === 'number'
-          ? feature.properties.a17
-          : typeof feature.properties?.area === 'number'
-            ? feature.properties.area
-            : null;
+        const areaSqm =
+          typeof feature.properties?.a17 === 'number'
+            ? feature.properties.a17
+            : typeof feature.properties?.area === 'number'
+              ? feature.properties.area
+              : null;
 
         return {
           data: {
@@ -113,7 +120,8 @@ export function createCadastralBoundaryConnector(): Connector<CadastralBoundaryI
           warnings: [],
         };
       } catch (error) {
-        const message = error instanceof HttpError ? error.message : String(error);
+        const message =
+          error instanceof HttpError ? error.message : String(error);
         console.error(`[${CONNECTOR_ID}] ${message}`);
         return emptyResult(message);
       }
@@ -121,7 +129,9 @@ export function createCadastralBoundaryConnector(): Connector<CadastralBoundaryI
   };
 }
 
-function emptyResult(warning: string): ConnectorResult<CadastralBoundaryOutput> {
+function emptyResult(
+  warning: string,
+): ConnectorResult<CadastralBoundaryOutput> {
   return {
     data: null,
     rawSnapshotId: `cadastral-err-${Date.now()}`,

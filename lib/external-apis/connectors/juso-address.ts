@@ -38,7 +38,7 @@ export type JusoAddressOutput = {
   sourceCoordinate: {
     x: number;
     y: number;
-    coordinateSystem: 'GRS80_UTMK';
+    coordinateSystem: 'GRS80_UTMK' | 'EPSG:4326';
   };
   detailAddress?: JusoAddressInput['detailAddress'] & {
     verification: 'user_confirmed' | 'unverified';
@@ -128,7 +128,15 @@ export function createJusoAddressConnector(): Connector<
         let longitude = juso.entX ? parseFloat(juso.entX) : 0;
 
         // Fallback: VWorld geocoding when JUSO doesn't return coordinates
-        if ((latitude === 0 || longitude === 0) && process.env.VWORLD_API_KEY) {
+        if (
+          !(
+            latitude >= 33 &&
+            latitude <= 39 &&
+            longitude >= 124 &&
+            longitude <= 132
+          ) &&
+          process.env.VWORLD_API_KEY
+        ) {
           try {
             const geoUrl = new URL('https://api.vworld.kr/req/address');
             geoUrl.searchParams.set('service', 'address');
@@ -136,11 +144,16 @@ export function createJusoAddressConnector(): Connector<
             geoUrl.searchParams.set('version', '2.0');
             geoUrl.searchParams.set('crs', 'epsg:4326');
             geoUrl.searchParams.set('type', 'PARCEL');
-            geoUrl.searchParams.set('address', input.address);
+            geoUrl.searchParams.set('address', juso.jibunAddr);
+            if (process.env.VWORLD_DOMAIN)
+              geoUrl.searchParams.set('domain', process.env.VWORLD_DOMAIN);
             geoUrl.searchParams.set('format', 'json');
             geoUrl.searchParams.set('key', process.env.VWORLD_API_KEY);
             const geoRes = await fetchWithRetry<{
-              response?: { status?: string; result?: { point?: { x?: string; y?: string } } };
+              response?: {
+                status?: string;
+                result?: { point?: { x?: string; y?: string } };
+              };
             }>(geoUrl.toString(), { timeoutMs: 5000, signal });
             const pt = geoRes.response?.result?.point;
             if (pt?.x && pt?.y) {
@@ -150,6 +163,17 @@ export function createJusoAddressConnector(): Connector<
           } catch {
             // VWorld geocoding failed, continue with 0,0
           }
+        }
+        if (
+          !(
+            latitude >= 33 &&
+            latitude <= 39 &&
+            longitude >= 124 &&
+            longitude <= 132
+          )
+        ) {
+          latitude = 0;
+          longitude = 0;
         }
         const detailedBuildingNames = (juso.detBdNmList ?? '')
           .split(',')
@@ -171,7 +195,7 @@ export function createJusoAddressConnector(): Connector<
             sourceCoordinate: {
               x: longitude,
               y: latitude,
-              coordinateSystem: 'GRS80_UTMK',
+              coordinateSystem: 'EPSG:4326',
             },
             detailAddress: input.detailAddress
               ? { ...input.detailAddress, verification: 'user_confirmed' }

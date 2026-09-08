@@ -5,7 +5,14 @@ export type MaterialPreset = 'residential' | 'commercial' | 'mixed' | 'office';
 export type BlenderModelingInput = {
   analysisId: string;
   address: string;
-  parcel: { areaSqm: number; boundary?: Array<{ latitude: number; longitude: number }> };
+  parcel: {
+    areaSqm: number;
+    boundary?: Array<{ latitude: number; longitude: number }>;
+  };
+  context?: {
+    footprint: { latitude: number; longitude: number }[];
+    heightM: number;
+  }[];
   scenario: {
     id: string;
     label: string;
@@ -13,12 +20,25 @@ export type BlenderModelingInput = {
     buildingCoveragePercent: number;
     floorAreaRatioPercent: number;
     floorHeights?: number[];
+    floorAreasSqm?: number[];
+    placement?: {
+      widthM: number;
+      depthM: number;
+      rotationRad: number;
+      center: { latitude: number; longitude: number };
+    };
   };
   material?: MaterialPreset;
   renderAngles?: ('birdseye' | 'perspective' | 'front' | 'side')[];
 };
 
-export type RunpodJobStatus = 'IN_QUEUE' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'TIMED_OUT';
+export type RunpodJobStatus =
+  | 'IN_QUEUE'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'TIMED_OUT';
 
 export type RenderView = {
   angle: 'birdseye' | 'perspective' | 'front' | 'side';
@@ -27,12 +47,17 @@ export type RenderView = {
 };
 
 export type RunpodBlenderResult = {
-  formatVersion: 'plint-blender-v1' | 'plint-blender-v2';
+  formatVersion: 'plint-blender-v1' | 'plint-blender-v2' | 'plint-blender-v3';
   renderer: 'blender-eevee' | 'blender-cycles';
   model: { mimeType: 'model/gltf-binary'; base64: string };
   preview: { mimeType: 'image/png'; base64: string };
   views?: RenderView[];
-  metrics: { floors: number; grossFloorAreaSqm: number; renderWidth: number; renderHeight: number };
+  metrics: {
+    floors: number;
+    grossFloorAreaSqm: number;
+    renderWidth: number;
+    renderHeight: number;
+  };
 };
 
 export type RunpodJob<TOutput = unknown> = {
@@ -56,24 +81,34 @@ function getConfig() {
   // RUNPOD_API_KEY is also supported for standard RunPod deployments.
   const apiKey = process.env.RUNPOD_API_KEY ?? process.env.RUNPOD;
   const endpointId = process.env.RUNPOD_ENDPOINT_ID;
-  if (!apiKey) throw new RunpodConfigurationError('RUNPOD API 키가 설정되지 않았습니다.');
-  if (!endpointId) throw new RunpodConfigurationError('RUNPOD_ENDPOINT_ID가 설정되지 않았습니다.');
+  if (!apiKey)
+    throw new RunpodConfigurationError('RUNPOD API 키가 설정되지 않았습니다.');
+  if (!endpointId)
+    throw new RunpodConfigurationError(
+      'RUNPOD_ENDPOINT_ID가 설정되지 않았습니다.',
+    );
   return { apiKey, endpointId };
 }
 
 async function requestRunpod<T>(path: string, init?: RequestInit): Promise<T> {
   const { apiKey, endpointId } = getConfig();
-  const response = await fetch(`https://api.runpod.ai/v2/${endpointId}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      ...init?.headers,
+  const headers = new Headers(init?.headers);
+  headers.set('Authorization', `Bearer ${apiKey}`);
+  headers.set('Content-Type', 'application/json');
+  const response = await fetch(
+    `https://api.runpod.ai/v2/${endpointId}${path}`,
+    {
+      ...init,
+      headers,
+      cache: 'no-store',
+      signal: AbortSignal.timeout(25000),
     },
-    cache: 'no-store',
-  });
+  );
   const body = await response.text();
-  if (!response.ok) throw new Error(`RunPod API 요청 실패 (${response.status}): ${body.slice(0, 500)}`);
+  if (!response.ok)
+    throw new Error(
+      `RunPod API 요청 실패 (${response.status}): ${body.slice(0, 500)}`,
+    );
   try {
     return JSON.parse(body) as T;
   } catch {
@@ -82,7 +117,10 @@ async function requestRunpod<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function isRunpodConfigured() {
-  return Boolean((process.env.RUNPOD_API_KEY ?? process.env.RUNPOD) && process.env.RUNPOD_ENDPOINT_ID);
+  return Boolean(
+    (process.env.RUNPOD_API_KEY ?? process.env.RUNPOD) &&
+    process.env.RUNPOD_ENDPOINT_ID,
+  );
 }
 
 export async function submitBlenderModelingJob(input: BlenderModelingInput) {
@@ -93,12 +131,19 @@ export async function submitBlenderModelingJob(input: BlenderModelingInput) {
 }
 
 export async function getBlenderModelingJob(jobId: string) {
-  return requestRunpod<RunpodJob<RunpodBlenderResult>>(`/status/${encodeURIComponent(jobId)}`);
+  return requestRunpod<RunpodJob<RunpodBlenderResult>>(
+    `/status/${encodeURIComponent(jobId)}`,
+  );
 }
 
 export async function getRunpodHealth() {
   return requestRunpod<{
-    jobs?: { completed?: number; failed?: number; inProgress?: number; inQueue?: number };
+    jobs?: {
+      completed?: number;
+      failed?: number;
+      inProgress?: number;
+      inQueue?: number;
+    };
     workers?: { idle?: number; running?: number };
   }>('/health');
 }

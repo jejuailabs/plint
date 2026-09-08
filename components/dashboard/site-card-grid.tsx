@@ -11,6 +11,7 @@ type Site = {
   id: string;
   jibun_address: string;
   created_at: string;
+  report_id?: string | null;
 };
 
 type SitesResponse = {
@@ -24,10 +25,7 @@ function formatDate(iso: string) {
 
 function SiteCard({ site }: { site: Site }) {
   return (
-    <Link
-      href={`/analysis?address=${encodeURIComponent(site.jibun_address)}`}
-      className="group rounded-2xl border border-white/8 bg-white/[0.035] p-5 transition hover:border-white/15 hover:bg-white/[0.06]"
-    >
+    <article className="group rounded-2xl border border-white/8 bg-white/[0.035] p-5 transition hover:border-white/15 hover:bg-white/[0.06]">
       <div className="flex items-start justify-between">
         <div className="grid size-10 place-items-center rounded-xl border border-cyan-300/20 bg-cyan-300/8">
           <MapPin className="size-4 text-cyan-300" />
@@ -37,7 +35,11 @@ function SiteCard({ site }: { site: Site }) {
         </span>
       </div>
       <p className="mt-4 text-sm font-medium text-white group-hover:text-cyan-100">
-        {site.jibun_address}
+        <Link
+          href={`/analysis?address=${encodeURIComponent(site.jibun_address)}`}
+        >
+          {site.jibun_address}
+        </Link>
       </p>
       <div className="mt-3 flex items-center gap-3 text-[11px] text-slate-500">
         <span className="flex items-center gap-1">
@@ -45,7 +47,21 @@ function SiteCard({ site }: { site: Site }) {
           {formatDate(site.created_at)}
         </span>
       </div>
-    </Link>
+      <div className="mt-4 flex gap-4 text-xs text-cyan-300">
+        <Link
+          href={`/analysis?address=${encodeURIComponent(site.jibun_address)}`}
+        >
+          분석 열기
+        </Link>
+        {site.report_id && (
+          <Link
+            href={`/report?address=${encodeURIComponent(site.jibun_address)}&reportId=${encodeURIComponent(site.report_id)}`}
+          >
+            저장된 보고서 보기
+          </Link>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -53,7 +69,10 @@ function SkeletonCards() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-white/8 bg-white/[0.035] p-5">
+        <div
+          key={i}
+          className="rounded-2xl border border-white/8 bg-white/[0.035] p-5"
+        >
           <Skeleton className="size-10 rounded-xl bg-white/5" />
           <Skeleton className="mt-4 h-4 w-3/4 bg-white/5" />
           <Skeleton className="mt-3 h-3 w-1/2 bg-white/5" />
@@ -69,9 +88,12 @@ function EmptyState() {
       <div className="grid size-16 place-items-center rounded-2xl border border-white/10 bg-white/[0.04]">
         <FolderOpen className="size-7 text-slate-600" />
       </div>
-      <h3 className="mt-6 text-lg font-medium text-white">첫 프로젝트를 시작하세요</h3>
+      <h3 className="mt-6 text-lg font-medium text-white">
+        첫 프로젝트를 시작하세요
+      </h3>
       <p className="mt-2 max-w-sm text-sm text-slate-500">
-        분석할 대지의 지번주소를 입력하면 필지 데이터, 규제 검토, 시장 분석, 3D 시나리오를 자동으로 생성합니다.
+        분석할 대지의 지번주소를 입력하면 필지 데이터, 규제 검토, 시장 분석, 3D
+        시나리오를 자동으로 생성합니다.
       </p>
       <Link href="/dashboard#new-project">
         <Button className="mt-6 h-10 bg-lime-300 px-5 text-slate-950 hover:bg-lime-200">
@@ -85,7 +107,9 @@ function EmptyState() {
 
 export function SiteCardGrid() {
   const [sites, setSites] = useState<Site[]>([]);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
 
   const fetchSites = useCallback(async () => {
     try {
@@ -109,12 +133,26 @@ export function SiteCardGrid() {
 
   if (status === 'loading') return <SkeletonCards />;
 
-  if (status === 'error') return (
-    <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/5 p-6">
-      <p className="text-sm text-rose-200">저장된 프로젝트를 불러오지 못했습니다.</p>
-      <Button className="mt-4" onClick={() => { setStatus('loading'); void fetchSites(); }}>다시 시도</Button>
-    </div>
-  );
+  if (status === 'error')
+    return (
+      <div
+        role="alert"
+        className="rounded-2xl border border-rose-300/20 bg-rose-300/5 p-6"
+      >
+        <p className="text-sm text-rose-200">
+          저장된 프로젝트를 불러오지 못했습니다.
+        </p>
+        <Button
+          className="mt-4"
+          onClick={() => {
+            setStatus('loading');
+            void fetchSites();
+          }}
+        >
+          다시 시도
+        </Button>
+      </div>
+    );
 
   if (sites.length === 0) return <EmptyState />;
 

@@ -459,3 +459,11 @@ html[data-theme='light'] .auth-modal .text-slate-500 {
   section { break-inside: avoid; }
   @page { margin: 12mm 10mm; size: A4; }
 }
+
+/* Editable study controls use explicit light surfaces, rather than translucent dark overlays. */
+html[data-theme='light'] .scenario-customizer { background:#fff; border-color:#cbd5e1; color:#16324a; }
+html[data-theme='light'] .scenario-customizer [class*='text-slate-'],
+html[data-theme='light'] .scenario-customizer [class*='text-cyan-'] { color:#334e68; }
+html[data-theme='light'] .scenario-customizer input[type='number'] { background:#f1f5f9; color:#0f172a; border:1px solid #94a3b8; }
+html[data-theme='light'] .scenario-customizer input[type='range'] { accent-color:#0891b2; }
+html[data-theme='light'] .scenario-customizer [class*='bg-white'] { background:#f1f5f9; }

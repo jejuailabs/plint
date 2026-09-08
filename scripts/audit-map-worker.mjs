@@ -1,0 +1,4 @@
+for(const [name,path] of [
+['static','https://api.vworld.kr/req/image?'+new URLSearchParams({service:'image',request:'getmap',version:'2.0',crs:'EPSG:4326',key:process.env.VWORLD_API_KEY,domain:process.env.VWORLD_DOMAIN||'',basemap:'PHOTO',center:'126.3389,33.4675',zoom:'18',size:'800,800',format:'png'})],
+['runpod-health',process.env.RUNPOD_ENDPOINT_ID?'https://api.runpod.ai/v2/'+process.env.RUNPOD_ENDPOINT_ID+'/health':null]
+]){if(!path){console.log(name,'not configured');continue;}try{const r=await fetch(path,{headers:name.startsWith('runpod')?{Authorization:'Bearer '+(process.env.RUNPOD_API_KEY||process.env.RUNPOD)}:{},signal:AbortSignal.timeout(15000)});const b=await r.arrayBuffer();console.log(name,r.status,r.headers.get('content-type'),b.byteLength,r.headers.get('content-type')?.includes('image')?'image':new TextDecoder().decode(b).slice(0,450));}catch(e){console.log(name,e.name)}}

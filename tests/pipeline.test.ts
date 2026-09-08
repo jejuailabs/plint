@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { POST } from '@/app/api/analysis/preview/route';
 import { runPreviewAnalysis } from '@/lib/pipeline/preview';
@@ -15,10 +15,20 @@ describe('development scenarios', () => {
     });
 
     expect(scenarios).toHaveLength(3);
-    expect(scenarios.map((scenario) => scenario.id)).toEqual(['yield', 'balanced', 'quality']);
-    expect(scenarios[0].grossFloorAreaSqm).toBeGreaterThan(scenarios[1].grossFloorAreaSqm);
-    expect(scenarios[1].grossFloorAreaSqm).toBeGreaterThan(scenarios[2].grossFloorAreaSqm);
-    expect(scenarios.every((scenario) => scenario.isPreliminaryOnly)).toBe(true);
+    expect(scenarios.map((scenario) => scenario.id)).toEqual([
+      'yield',
+      'balanced',
+      'quality',
+    ]);
+    expect(scenarios[0].grossFloorAreaSqm).toBeGreaterThan(
+      scenarios[1].grossFloorAreaSqm,
+    );
+    expect(scenarios[1].grossFloorAreaSqm).toBeGreaterThan(
+      scenarios[2].grossFloorAreaSqm,
+    );
+    expect(scenarios.every((scenario) => scenario.isPreliminaryOnly)).toBe(
+      true,
+    );
   });
 
   it('never exceeds the supplied statutory candidates', () => {
@@ -37,6 +47,8 @@ describe('development scenarios', () => {
 });
 
 describe('preview analysis', () => {
+  beforeEach(() => vi.stubEnv('USE_MOCK_EXTERNAL_API', 'true'));
+  afterEach(() => vi.unstubAllEnvs());
   it('creates a deterministic parcel with traceable evidence', async () => {
     const address = '서울특별시 성동구 성수동2가 277-17';
     const first = await runPreviewAnalysis(address);
@@ -44,7 +56,9 @@ describe('preview analysis', () => {
 
     expect(first.meta.mode).toBe('mock');
     expect(first.data.identity.pnu.value).toBe(second.data.identity.pnu.value);
-    expect(first.data.geometry.areaSqm.value).toBe(second.data.geometry.areaSqm.value);
+    expect(first.data.geometry.areaSqm.value).toBe(
+      second.data.geometry.areaSqm.value,
+    );
     expect(first.data.geometry.boundary.evidence[0].datasetId).toBe('15056910');
     expect(first.data.scenarios).toHaveLength(3);
     expect(first.data.coverage.percent).toBeGreaterThan(0);
@@ -64,10 +78,12 @@ describe('preview analysis', () => {
 describe('preview route', () => {
   it('rejects an invalid address with the common error envelope', async () => {
     const request = new Request('http://localhost/api/analysis/preview', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: '서울' }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: '서울' }),
     });
     const response = await POST(request);
-    const body = await response.json() as { error: { code: string } };
+    const body = (await response.json()) as { error: { code: string } };
 
     expect(response.status).toBe(400);
     expect(body.error.code).toBe('INVALID_ADDRESS');

@@ -5,7 +5,11 @@ import { error, success } from '@/lib/api/response';
 import { createClient } from '@/lib/supabase/server';
 
 const createSiteSchema = z.object({
-  jibunAddress: z.string().trim().min(5, '주소를 5자 이상 입력해 주세요.').max(200),
+  jibunAddress: z
+    .string()
+    .trim()
+    .min(5, '주소를 5자 이상 입력해 주세요.')
+    .max(200),
   roadAddress: z.string().trim().max(200).optional(),
   pnuCode: z
     .string()
@@ -20,7 +24,9 @@ export async function GET() {
 
     const { data, error: dbError } = await supabase
       .from('sites')
-      .select('*')
+      .select(
+        '*, analyses(id, status, completed_at, report_generated_at:result->aiReport->>generatedAt)',
+      )
       .eq('user_id', claims.userId)
       .order('created_at', { ascending: false });
 
@@ -29,7 +35,23 @@ export async function GET() {
       return error('DB_ERROR', '사이트 목록 조회에 실패했습니다.', 500);
     }
 
-    return success(data ?? []);
+    return success(
+      (data ?? []).map(({ analyses, ...site }) => {
+        const report = (
+          (analyses ?? []) as {
+            id: string;
+            status: string;
+            completed_at: string | null;
+            report_generated_at: string | null;
+          }[]
+        )
+          .filter((a) => a.status === 'completed' && a.report_generated_at)
+          .sort((a, b) =>
+            (b.completed_at ?? '').localeCompare(a.completed_at ?? ''),
+          )[0];
+        return { ...site, report_id: report?.id ?? null };
+      }),
+    );
   } catch (thrown) {
     if (thrown instanceof Response) return thrown;
     throw thrown;
@@ -40,7 +62,9 @@ export async function POST(request: Request) {
   try {
     const claims = await requireAuth();
 
-    const parsed = createSiteSchema.safeParse(await request.json().catch(() => null));
+    const parsed = createSiteSchema.safeParse(
+      await request.json().catch(() => null),
+    );
     if (!parsed.success) {
       return error(
         'INVALID_BODY',

@@ -1,0 +1,54 @@
+[
+  {
+    "name": "address",
+    "status": 200,
+    "type": "application/json;charset=UTF-8",
+    "sample": "{\"results\":{\"common\":{\"countPerPage\":\"1\",\"errorMessage\":\"정상\",\"errorCode\":\"0\",\"totalCount\":\"1\",\"currentPage\":\"1\"},\"juso\":[{\"siNm\":\"제주특별자치도\",\"lnbrMnnm\":\"1105\",\"bdKdcd\":\"0\",\"jibunAddr\":\"제주특별자치도 제주시 애월읍 고내리 1105-1\",\"buldSlno\":\"0\",\"bdMgtSn\":\"50110253331110500010000"
+  },
+  {
+    "pnu": "5011025333111050001",
+    "address": "제주특별자치도 제주시 애월읍 고내리 1105-1"
+  },
+  {
+    "name": "characteristics",
+    "status": 200,
+    "type": "application/json;charset=UTF-8",
+    "sample": "{\"response\" : {\"resultCode\" : \"URL_TYPE\", \"resultMsg\" : \"잘못된 URL 입니다.\"}}"
+  },
+  {
+    "name": "planning",
+    "status": 200,
+    "type": "application/json;charset=UTF-8",
+    "sample": "{\"landUses\" : {\"field\" : [{\"cnflcAt\" : \"2\", \"ldCode\" : \"5011025333\", \"ldCodeNm\" : \"제주특별자치도 제주시 애월읍 고내리\", \"mnnmSlno\" : \"1105-1\", \"prposAreaDstrcCodeNm\" : \"고도지구\", \"cnflcAtNm\" : \"저촉\", \"pnu\" : \"5011025333111050001\", \"lastUpdtDt\" : \"2026-08-25\", \"regstrSeCodeNm\" : "
+  },
+  {
+    "name": "boundary",
+    "status": 200,
+    "type": "application/json;charset=UTF-8",
+    "sample": "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"id\":\"lt_c_landinfobasemap.10374067\",\"geometry\":{\"type\":\"MultiPolygon\",\"coordinates\":[[[[126.33912617,33.46771059],[126.33915784,33.46744093],[126.33914708,33.46743408],[126.33901877,33.46735234],[126.3"
+  },
+  {
+    "name": "geocode",
+    "status": 200,
+    "type": "application/json;charset=UTF-8",
+    "sample": "{\"response\" : {\"service\" : {\"name\" : \"address\", \"version\" : \"2.0\", \"operation\" : \"getcoord\", \"time\" : \"20(ms)\"}, \"status\" : \"OK\", \"input\" : {\"type\" : \"ROAD\", \"address\" : \"제주특별자치도 제주시 애월읍 애월해안로 255\"}, \"refined\" : {\"text\" : \"제주특별자치도 제주시 애월읍 애월해안로 255\", \"structur"
+  },
+  {
+    "name": "price",
+    "status": 200,
+    "type": "application/json;charset=UTF-8",
+    "sample": "{\"indvdLandPrices\" : {\"field\" : [{\"mnnmSlno\" : \"1105-1\", \"pblntfDe\" : \"2025-04-30\", \"stdLandAt\" : \"N\", \"stdrYear\" : \"2025\", \"pnu\" : \"5011025333111050001\", \"lastUpdtDt\" : \"2025-06-18\", \"ldCode\" : \"5011025333\", \"ldCodeNm\" : \"제주특별자치도 제주시 애월읍 고내리\", \"regstrSeCodeNm"
+  },
+  {
+    "name": "transactions",
+    "status": 403,
+    "type": "application/json",
+    "sample": "{\n  \"OpenAPI_ServiceResponse\": {\n    \"cmmMsgHeader\": {\n      \"errMsg\": \"SERVICE_KEY_IS_NOT_REGISTERED_ERROR\",\n      \"returnAuthMsg\": \"등록되지 않은 서비스키\",\n      \"returnReasonCode\": \"30\"\n    }\n  }\n}\n"
+  },
+  {
+    "name": "weather",
+    "status": 403,
+    "type": "application/json",
+    "sample": "{\n  \"OpenAPI_ServiceResponse\": {\n    \"cmmMsgHeader\": {\n      \"errMsg\": \"SERVICE_KEY_IS_NOT_REGISTERED_ERROR\",\n      \"returnAuthMsg\": \"등록되지 않은 서비스키\",\n      \"returnReasonCode\": \"30\"\n    }\n  }\n}\n"
+  }
+]

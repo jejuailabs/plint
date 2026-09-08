@@ -1,0 +1,5850 @@
+{
+  "data": {
+    "identity": {
+      "pnu": {
+        "value": "5011025333111050001",
+        "evidence": [
+          {
+            "provider": "도로명주소",
+            "datasetId": "juso-address-resolution",
+            "sourceUrl": "https://business.juso.go.kr/addrlink/openApi/searchApi.do",
+            "observedAt": "2026-09-08T08:42:16.765Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "official-api-review",
+            "coordinateSystem": "GRS80 UTM-K",
+            "rawSnapshotId": "juso-1788856936765",
+            "confidence": "verified"
+          }
+        ],
+        "warnings": []
+      },
+      "jibunAddress": {
+        "value": "제주특별자치도 제주시 애월읍 고내리 1105-1",
+        "evidence": [
+          {
+            "provider": "도로명주소",
+            "datasetId": "juso-address-resolution",
+            "sourceUrl": "https://business.juso.go.kr/addrlink/openApi/searchApi.do",
+            "observedAt": "2026-09-08T08:42:16.765Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "official-api-review",
+            "coordinateSystem": "GRS80 UTM-K",
+            "rawSnapshotId": "juso-1788856936765",
+            "confidence": "verified"
+          }
+        ],
+        "warnings": []
+      },
+      "roadAddress": {
+        "value": "제주특별자치도 제주시 애월읍 애월해안로 255",
+        "evidence": [
+          {
+            "provider": "도로명주소",
+            "datasetId": "juso-address-resolution",
+            "sourceUrl": "https://business.juso.go.kr/addrlink/openApi/searchApi.do",
+            "observedAt": "2026-09-08T08:42:16.765Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "official-api-review",
+            "coordinateSystem": "GRS80 UTM-K",
+            "rawSnapshotId": "juso-1788856936765",
+            "confidence": "verified"
+          }
+        ],
+        "warnings": []
+      },
+      "center": {
+        "value": {
+          "latitude": 33.46755201971409,
+          "longitude": 126.33898401573151
+        },
+        "evidence": [
+          {
+            "provider": "도로명주소",
+            "datasetId": "juso-address-resolution",
+            "sourceUrl": "https://business.juso.go.kr/addrlink/openApi/searchApi.do",
+            "observedAt": "2026-09-08T08:42:16.765Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "official-api-review",
+            "coordinateSystem": "GRS80 UTM-K",
+            "rawSnapshotId": "juso-1788856936765",
+            "confidence": "verified"
+          }
+        ],
+        "warnings": []
+      }
+    },
+    "geometry": {
+      "areaSqm": {
+        "value": 904,
+        "evidence": [
+          {
+            "provider": "국토교통부",
+            "datasetId": "15123549",
+            "sourceUrl": "https://www.data.go.kr/data/15123549/openapi.do",
+            "observedAt": "2026-09-08T08:42:17.051Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "public-data-unrestricted",
+            "rawSnapshotId": "landchar-1788856937051",
+            "confidence": "verified"
+          }
+        ],
+        "warnings": []
+      },
+      "landCategory": {
+        "value": "대",
+        "evidence": [
+          {
+            "provider": "국토교통부",
+            "datasetId": "15123549",
+            "sourceUrl": "https://www.data.go.kr/data/15123549/openapi.do",
+            "observedAt": "2026-09-08T08:42:17.051Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "public-data-unrestricted",
+            "rawSnapshotId": "landchar-1788856937051",
+            "confidence": "verified"
+          }
+        ],
+        "warnings": []
+      },
+      "boundary": {
+        "value": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33912617,
+                33.46771059
+              ],
+              [
+                126.33915784,
+                33.46744093
+              ],
+              [
+                126.33914708,
+                33.46743408
+              ],
+              [
+                126.33901877,
+                33.46735234
+              ],
+              [
+                126.33900828,
+                33.46734856
+              ],
+              [
+                126.33893772,
+                33.46748871
+              ],
+              [
+                126.33882412,
+                33.46746905
+              ],
+              [
+                126.3388329,
+                33.4674826
+              ],
+              [
+                126.33881469,
+                33.46756461
+              ],
+              [
+                126.33879298,
+                33.46760795
+              ],
+              [
+                126.33878219,
+                33.46766473
+              ],
+              [
+                126.33908876,
+                33.46771223
+              ],
+              [
+                126.33912617,
+                33.46771059
+              ]
+            ]
+          ]
+        },
+        "evidence": [
+          {
+            "provider": "국토교통부",
+            "datasetId": "15056910",
+            "sourceUrl": "https://www.data.go.kr/data/15056910/openapi.do",
+            "observedAt": "2026-09-08T08:42:17.027Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "public-data-unrestricted",
+            "coordinateSystem": "source-defined",
+            "rawSnapshotId": "cadastral-5011025333111050001-1788856937027",
+            "confidence": "verified"
+          }
+        ],
+        "warnings": []
+      },
+      "frontageM": {
+        "value": null,
+        "evidence": [],
+        "warnings": [
+          "도로 데이터 연결 전 산출 불가"
+        ]
+      },
+      "roadWidthM": {
+        "value": null,
+        "evidence": [],
+        "derivation": "road-side-code:v1",
+        "warnings": [
+          "도로접면: 소로각지"
+        ]
+      },
+      "slopePercent": {
+        "value": null,
+        "evidence": [],
+        "warnings": [
+          "경사도 정보 없음"
+        ]
+      }
+    },
+    "planning": [
+      {
+        "code": "UQA121",
+        "name": "제1종일반주거지역",
+        "category": "zoning",
+        "status": "review_required",
+        "summary": {
+          "value": "검토 가정: 건폐율 60% · 용적률 200% (조례·중첩구역 검증 전)",
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15045900",
+              "sourceUrl": "https://www.data.go.kr/data/15045900/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.075Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "landuse-1788856937075",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "code": "UQH100",
+        "name": "고도지구",
+        "category": "district",
+        "status": "confirmed",
+        "summary": {
+          "value": "고도지구 · 저촉",
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15045900",
+              "sourceUrl": "https://www.data.go.kr/data/15045900/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.075Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "landuse-1788856937075",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "code": "UQS119",
+        "name": "중로3류(폭 12m~15m)",
+        "category": "district",
+        "status": "confirmed",
+        "summary": {
+          "value": "중로3류(폭 12m~15m) · 접함",
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15045900",
+              "sourceUrl": "https://www.data.go.kr/data/15045900/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.075Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "landuse-1788856937075",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "code": "UGA100",
+        "name": "어항구역(육역)",
+        "category": "district",
+        "status": "confirmed",
+        "summary": {
+          "value": "어항구역(육역) · 저촉",
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15045900",
+              "sourceUrl": "https://www.data.go.kr/data/15045900/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.075Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "landuse-1788856937075",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "code": "UBH500",
+        "name": "건축계획심의대상구역",
+        "category": "district",
+        "status": "confirmed",
+        "summary": {
+          "value": "건축계획심의대상구역 · 저촉",
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15045900",
+              "sourceUrl": "https://www.data.go.kr/data/15045900/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.075Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "landuse-1788856937075",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "code": "UMZ100",
+        "name": "가축사육제한구역",
+        "category": "district",
+        "status": "confirmed",
+        "summary": {
+          "value": "가축사육제한구역 · 포함",
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15045900",
+              "sourceUrl": "https://www.data.go.kr/data/15045900/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.075Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "landuse-1788856937075",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "code": "UML200",
+        "name": "하수처리구역",
+        "category": "district",
+        "status": "confirmed",
+        "summary": {
+          "value": "하수처리구역 · 포함",
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15045900",
+              "sourceUrl": "https://www.data.go.kr/data/15045900/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.075Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "landuse-1788856937075",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "code": "UQA410",
+        "name": "보전녹지지역",
+        "category": "zoning",
+        "status": "confirmed",
+        "summary": {
+          "value": "보전녹지지역 · 저촉",
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15045900",
+              "sourceUrl": "https://www.data.go.kr/data/15045900/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.075Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "landuse-1788856937075",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "code": "UQF120",
+        "name": "특화경관지구",
+        "category": "district",
+        "status": "confirmed",
+        "summary": {
+          "value": "특화경관지구 · 저촉",
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15045900",
+              "sourceUrl": "https://www.data.go.kr/data/15045900/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.075Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "landuse-1788856937075",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "code": "ROAD-ACCESS",
+        "name": "접도 검토",
+        "category": "road",
+        "status": "review_required",
+        "summary": {
+          "value": null,
+          "evidence": [],
+          "warnings": [
+            "도로 데이터 연결 전 접도 검토 불가"
+          ]
+        }
+      }
+    ],
+    "existing": [
+      {
+        "id": "building-1",
+        "use": {
+          "value": "숙박시설",
+          "evidence": [
+            {
+              "provider": "건축HUB",
+              "datasetId": "15134735",
+              "sourceUrl": "https://www.data.go.kr/data/15134735/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.034Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "bldg-1788856937034",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        },
+        "floorsAbove": {
+          "value": 3,
+          "evidence": [
+            {
+              "provider": "건축HUB",
+              "datasetId": "15134735",
+              "sourceUrl": "https://www.data.go.kr/data/15134735/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.034Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "bldg-1788856937034",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        },
+        "totalFloorAreaSqm": {
+          "value": 1212.75,
+          "evidence": [
+            {
+              "provider": "건축HUB",
+              "datasetId": "15134735",
+              "sourceUrl": "https://www.data.go.kr/data/15134735/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.034Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "bldg-1788856937034",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        },
+        "approvedAt": {
+          "value": "2015-01-01",
+          "evidence": [
+            {
+              "provider": "건축HUB",
+              "datasetId": "15134735",
+              "sourceUrl": "https://www.data.go.kr/data/15134735/openapi.do",
+              "observedAt": "2026-09-08T08:42:17.034Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "bldg-1788856937034",
+              "confidence": "verified"
+            }
+          ],
+          "warnings": []
+        }
+      }
+    ],
+    "context": [
+      {
+        "id": "5011025333011080000036139",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33871827,
+                33.46744145
+              ],
+              [
+                126.33866802,
+                33.46749898
+              ],
+              [
+                126.33866246,
+                33.4674948
+              ],
+              [
+                126.33863902,
+                33.46752163
+              ],
+              [
+                126.33864448,
+                33.46752491
+              ],
+              [
+                126.3386422,
+                33.46752751
+              ],
+              [
+                126.33868375,
+                33.46755289
+              ],
+              [
+                126.33875932,
+                33.46756014
+              ],
+              [
+                126.33880948,
+                33.46749946
+              ],
+              [
+                126.33871827,
+                33.46744145
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011080001040708",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33860484,
+                33.46754661
+              ],
+              [
+                126.33858107,
+                33.46757389
+              ],
+              [
+                126.3386533,
+                33.46761106
+              ],
+              [
+                126.33866861,
+                33.4675922
+              ],
+              [
+                126.33865605,
+                33.46757429
+              ],
+              [
+                126.33860484,
+                33.46754661
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011070000036141",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33873903,
+                33.46731327
+              ],
+              [
+                126.33870002,
+                33.46732198
+              ],
+              [
+                126.33870129,
+                33.4673256
+              ],
+              [
+                126.33864644,
+                33.46733802
+              ],
+              [
+                126.33864948,
+                33.46734867
+              ],
+              [
+                126.33864473,
+                33.46734982
+              ],
+              [
+                126.33866568,
+                33.46741097
+              ],
+              [
+                126.33866277,
+                33.46741186
+              ],
+              [
+                126.33866646,
+                33.46742071
+              ],
+              [
+                126.33873348,
+                33.46740664
+              ],
+              [
+                126.33872897,
+                33.46739192
+              ],
+              [
+                126.33876064,
+                33.46738524
+              ],
+              [
+                126.33873903,
+                33.46731327
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011070000041076",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33862628,
+                33.46731429
+              ],
+              [
+                126.33858868,
+                33.46732292
+              ],
+              [
+                126.33860634,
+                33.46737738
+              ],
+              [
+                126.33864362,
+                33.46736884
+              ],
+              [
+                126.33862628,
+                33.46731429
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011040001040952",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33887363,
+                33.46706812
+              ],
+              [
+                126.33887563,
+                33.46704559
+              ],
+              [
+                126.33883961,
+                33.46704314
+              ],
+              [
+                126.33884022,
+                33.46703449
+              ],
+              [
+                126.33881161,
+                33.46703308
+              ],
+              [
+                126.33881127,
+                33.46703632
+              ],
+              [
+                126.33879815,
+                33.46703544
+              ],
+              [
+                126.33879201,
+                33.4671216
+              ],
+              [
+                126.33886846,
+                33.46712642
+              ],
+              [
+                126.33887363,
+                33.46706812
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011040001041040",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33889117,
+                33.46705406
+              ],
+              [
+                126.33888345,
+                33.46713516
+              ],
+              [
+                126.33892483,
+                33.46713971
+              ],
+              [
+                126.33892437,
+                33.46714376
+              ],
+              [
+                126.33897275,
+                33.46714781
+              ],
+              [
+                126.3389717,
+                33.46715817
+              ],
+              [
+                126.33902707,
+                33.46716207
+              ],
+              [
+                126.33903416,
+                33.46709268
+              ],
+              [
+                126.33902223,
+                33.46709199
+              ],
+              [
+                126.33902437,
+                33.46706504
+              ],
+              [
+                126.33889117,
+                33.46705406
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011050001036238",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33889422,
+                33.46747717
+              ],
+              [
+                126.3389181,
+                33.46748216
+              ],
+              [
+                126.33892292,
+                33.46746682
+              ],
+              [
+                126.33889886,
+                33.46746186
+              ],
+              [
+                126.33889422,
+                33.46747717
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011050008036120",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33895095,
+                33.46745495
+              ],
+              [
+                126.33897577,
+                33.46740297
+              ],
+              [
+                126.33895763,
+                33.46739693
+              ],
+              [
+                126.33897765,
+                33.46735267
+              ],
+              [
+                126.33897767,
+                33.46735096
+              ],
+              [
+                126.33897768,
+                33.46734871
+              ],
+              [
+                126.33897587,
+                33.46734689
+              ],
+              [
+                126.33897448,
+                33.46734553
+              ],
+              [
+                126.33883615,
+                33.46730179
+              ],
+              [
+                126.33883368,
+                33.46730097
+              ],
+              [
+                126.33883078,
+                33.46730113
+              ],
+              [
+                126.33882862,
+                33.46730112
+              ],
+              [
+                126.33882689,
+                33.4673021
+              ],
+              [
+                126.33882549,
+                33.46730291
+              ],
+              [
+                126.33882376,
+                33.46730389
+              ],
+              [
+                126.33881292,
+                33.46732944
+              ],
+              [
+                126.33877342,
+                33.46731769
+              ],
+              [
+                126.33875996,
+                33.46734809
+              ],
+              [
+                126.33877679,
+                33.46739777
+              ],
+              [
+                126.3387826,
+                33.4673987
+              ],
+              [
+                126.33878028,
+                33.46740644
+              ],
+              [
+                126.3389216,
+                33.46745245
+              ],
+              [
+                126.3389239,
+                33.46744733
+              ],
+              [
+                126.33895095,
+                33.46745495
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333004770000036258",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33976007,
+                33.46781957
+              ],
+              [
+                126.33969751,
+                33.46784223
+              ],
+              [
+                126.33970843,
+                33.46786348
+              ],
+              [
+                126.33969925,
+                33.46786739
+              ],
+              [
+                126.33972909,
+                33.46791876
+              ],
+              [
+                126.33973449,
+                33.46791654
+              ],
+              [
+                126.33974606,
+                33.46793634
+              ],
+              [
+                126.33980895,
+                33.46791342
+              ],
+              [
+                126.33979462,
+                33.46788792
+              ],
+              [
+                126.33980616,
+                33.46788419
+              ],
+              [
+                126.33978462,
+                33.46784522
+              ],
+              [
+                126.33977491,
+                33.46784904
+              ],
+              [
+                126.33976007,
+                33.46781957
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333004740000040823",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34006565,
+                33.4683916
+              ],
+              [
+                126.34001088,
+                33.46828015
+              ],
+              [
+                126.33998348,
+                33.46828949
+              ],
+              [
+                126.33993366,
+                33.46830656
+              ],
+              [
+                126.33998349,
+                33.46840525
+              ],
+              [
+                126.33999011,
+                33.46841833
+              ],
+              [
+                126.34006565,
+                33.4683916
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333104740001000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34013579,
+                33.46859922
+              ],
+              [
+                126.34022704,
+                33.46856704
+              ],
+              [
+                126.34019115,
+                33.46849553
+              ],
+              [
+                126.34016127,
+                33.46850613
+              ],
+              [
+                126.34018468,
+                33.46855226
+              ],
+              [
+                126.34012293,
+                33.46857415
+              ],
+              [
+                126.34013579,
+                33.46859922
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333104730000000002",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34052312,
+                33.46843956
+              ],
+              [
+                126.34044298,
+                33.46844247
+              ],
+              [
+                126.34044131,
+                33.46841015
+              ],
+              [
+                126.34041763,
+                33.46841098
+              ],
+              [
+                126.34041299,
+                33.46832137
+              ],
+              [
+                126.34042798,
+                33.46832066
+              ],
+              [
+                126.34042532,
+                33.46826948
+              ],
+              [
+                126.34048951,
+                33.46826733
+              ],
+              [
+                126.3404922,
+                33.46831932
+              ],
+              [
+                126.34051588,
+                33.46831846
+              ],
+              [
+                126.34051807,
+                33.46836066
+              ],
+              [
+                126.34050842,
+                33.46836101
+              ],
+              [
+                126.34051066,
+                33.4684042
+              ],
+              [
+                126.34052127,
+                33.46840382
+              ],
+              [
+                126.34052312,
+                33.46843956
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333104730000000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34026537,
+                33.46880881
+              ],
+              [
+                126.34023751,
+                33.46880982
+              ],
+              [
+                126.34023835,
+                33.46882599
+              ],
+              [
+                126.34012714,
+                33.46883003
+              ],
+              [
+                126.34011789,
+                33.46865153
+              ],
+              [
+                126.3402291,
+                33.46864748
+              ],
+              [
+                126.34023241,
+                33.46871123
+              ],
+              [
+                126.34026026,
+                33.46871022
+              ],
+              [
+                126.34026537,
+                33.46880881
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333104830000000003",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34053893,
+                33.46861359
+              ],
+              [
+                126.34046828,
+                33.46868441
+              ],
+              [
+                126.34041821,
+                33.46864938
+              ],
+              [
+                126.34043883,
+                33.46862858
+              ],
+              [
+                126.34042467,
+                33.46861887
+              ],
+              [
+                126.34045144,
+                33.46859214
+              ],
+              [
+                126.34044672,
+                33.46858897
+              ],
+              [
+                126.34047044,
+                33.46856562
+              ],
+              [
+                126.34053893,
+                33.46861359
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333104830000000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34060418,
+                33.46882507
+              ],
+              [
+                126.34053885,
+                33.46883796
+              ],
+              [
+                126.34051625,
+                33.46875653
+              ],
+              [
+                126.34058144,
+                33.46874338
+              ],
+              [
+                126.34060418,
+                33.46882507
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333105660000000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.3401742,
+                33.46635521
+              ],
+              [
+                126.34024048,
+                33.46639965
+              ],
+              [
+                126.34033083,
+                33.46630499
+              ],
+              [
+                126.34026455,
+                33.46626055
+              ],
+              [
+                126.34020613,
+                33.46632175
+              ],
+              [
+                126.34021526,
+                33.46632787
+              ],
+              [
+                126.34020937,
+                33.46633404
+              ],
+              [
+                126.34020408,
+                33.46633958
+              ],
+              [
+                126.34019495,
+                33.46633346
+              ],
+              [
+                126.3401742,
+                33.46635521
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333105840001000003",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33984524,
+                33.46613382
+              ],
+              [
+                126.33993201,
+                33.46613453
+              ],
+              [
+                126.33993188,
+                33.4661453
+              ],
+              [
+                126.33997686,
+                33.46614566
+              ],
+              [
+                126.33997698,
+                33.46613489
+              ],
+              [
+                126.34000911,
+                33.46613515
+              ],
+              [
+                126.34000886,
+                33.46615669
+              ],
+              [
+                126.34002492,
+                33.46615682
+              ],
+              [
+                126.34002449,
+                33.46619452
+              ],
+              [
+                126.3399766,
+                33.46619428
+              ],
+              [
+                126.33997629,
+                33.46622091
+              ],
+              [
+                126.34000804,
+                33.46622117
+              ],
+              [
+                126.34000795,
+                33.46622949
+              ],
+              [
+                126.33991785,
+                33.46622876
+              ],
+              [
+                126.33991825,
+                33.46619375
+              ],
+              [
+                126.33984456,
+                33.46619315
+              ],
+              [
+                126.33984524,
+                33.46613382
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333105850001000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33973046,
+                33.46624226
+              ],
+              [
+                126.33975786,
+                33.46625672
+              ],
+              [
+                126.33976183,
+                33.46625172
+              ],
+              [
+                126.33976758,
+                33.46625476
+              ],
+              [
+                126.33978876,
+                33.46622666
+              ],
+              [
+                126.33976745,
+                33.46621553
+              ],
+              [
+                126.33976053,
+                33.46622446
+              ],
+              [
+                126.33974681,
+                33.46621739
+              ],
+              [
+                126.33975376,
+                33.4661842
+              ],
+              [
+                126.33976974,
+                33.46615662
+              ],
+              [
+                126.33972694,
+                33.46613935
+              ],
+              [
+                126.33971124,
+                33.4661673
+              ],
+              [
+                126.33966288,
+                33.46622334
+              ],
+              [
+                126.3396338,
+                33.46624444
+              ],
+              [
+                126.33966515,
+                33.46627525
+              ],
+              [
+                126.33969447,
+                33.46625397
+              ],
+              [
+                126.33973046,
+                33.46624226
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333105860001000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33948225,
+                33.46647718
+              ],
+              [
+                126.33946579,
+                33.46650032
+              ],
+              [
+                126.3394988,
+                33.46651676
+              ],
+              [
+                126.33950536,
+                33.46650773
+              ],
+              [
+                126.33954437,
+                33.46652709
+              ],
+              [
+                126.33958292,
+                33.4664727
+              ],
+              [
+                126.33957377,
+                33.46646799
+              ],
+              [
+                126.33957821,
+                33.46646186
+              ],
+              [
+                126.33955457,
+                33.46645011
+              ],
+              [
+                126.339565,
+                33.46643538
+              ],
+              [
+                126.33952561,
+                33.4664158
+              ],
+              [
+                126.33950802,
+                33.46644077
+              ],
+              [
+                126.33950194,
+                33.46643768
+              ],
+              [
+                126.33947607,
+                33.46647425
+              ],
+              [
+                126.33948225,
+                33.46647718
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005870001036227",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33928543,
+                33.46615772
+              ],
+              [
+                126.33924321,
+                33.46622106
+              ],
+              [
+                126.33924686,
+                33.46622324
+              ],
+              [
+                126.33924075,
+                33.46623403
+              ],
+              [
+                126.33926306,
+                33.46624298
+              ],
+              [
+                126.33926503,
+                33.46623875
+              ],
+              [
+                126.33926953,
+                33.46624022
+              ],
+              [
+                126.33927205,
+                33.46623491
+              ],
+              [
+                126.33931449,
+                33.46617068
+              ],
+              [
+                126.33928543,
+                33.46615772
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005870001040680",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33926447,
+                33.46624073
+              ],
+              [
+                126.33921459,
+                33.46635001
+              ],
+              [
+                126.33921867,
+                33.46635184
+              ],
+              [
+                126.33921568,
+                33.46636219
+              ],
+              [
+                126.33922685,
+                33.46636531
+              ],
+              [
+                126.33921237,
+                33.46640148
+              ],
+              [
+                126.33924703,
+                33.46641303
+              ],
+              [
+                126.33925943,
+                33.46638154
+              ],
+              [
+                126.3392899,
+                33.46639189
+              ],
+              [
+                126.33930575,
+                33.46635879
+              ],
+              [
+                126.33931819,
+                33.466363
+              ],
+              [
+                126.3393263,
+                33.46634384
+              ],
+              [
+                126.33933306,
+                33.46634586
+              ],
+              [
+                126.33933709,
+                33.46633966
+              ],
+              [
+                126.33934348,
+                33.46633339
+              ],
+              [
+                126.33934772,
+                33.46632773
+              ],
+              [
+                126.33934853,
+                33.46632097
+              ],
+              [
+                126.33934558,
+                33.4663123
+              ],
+              [
+                126.3393472,
+                33.46631141
+              ],
+              [
+                126.33936177,
+                33.46627668
+              ],
+              [
+                126.33933687,
+                33.46626934
+              ],
+              [
+                126.33933895,
+                33.46626466
+              ],
+              [
+                126.33926447,
+                33.46624073
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005830000040796",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33979109,
+                33.46653312
+              ],
+              [
+                126.33969592,
+                33.46652901
+              ],
+              [
+                126.33968795,
+                33.46665817
+              ],
+              [
+                126.33978205,
+                33.46666083
+              ],
+              [
+                126.33979109,
+                33.46653312
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005830000040716",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33963758,
+                33.46634954
+              ],
+              [
+                126.33965081,
+                33.46638427
+              ],
+              [
+                126.33969938,
+                33.46637127
+              ],
+              [
+                126.33968614,
+                33.46633654
+              ],
+              [
+                126.33963758,
+                33.46634954
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005830000040765",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33976063,
+                33.46630729
+              ],
+              [
+                126.33972341,
+                33.46632143
+              ],
+              [
+                126.33974532,
+                33.4663687
+              ],
+              [
+                126.3397834,
+                33.46635547
+              ],
+              [
+                126.33976063,
+                33.46630729
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005830000041041",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33982271,
+                33.4663775
+              ],
+              [
+                126.339835,
+                33.46645853
+              ],
+              [
+                126.33990928,
+                33.46645171
+              ],
+              [
+                126.33989817,
+                33.46637114
+              ],
+              [
+                126.33982271,
+                33.4663775
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333110970000000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33915493,
+                33.46691615
+              ],
+              [
+                126.33918063,
+                33.46693004
+              ],
+              [
+                126.33917339,
+                33.46693932
+              ],
+              [
+                126.33916602,
+                33.46694877
+              ],
+              [
+                126.33918938,
+                33.46696315
+              ],
+              [
+                126.33920317,
+                33.46694603
+              ],
+              [
+                126.33922239,
+                33.46695718
+              ],
+              [
+                126.33928229,
+                33.46688628
+              ],
+              [
+                126.33926155,
+                33.46687392
+              ],
+              [
+                126.33927627,
+                33.46685628
+              ],
+              [
+                126.33924256,
+                33.46683636
+              ],
+              [
+                126.33923673,
+                33.46684312
+              ],
+              [
+                126.33921226,
+                33.46682962
+              ],
+              [
+                126.33915749,
+                33.46689988
+              ],
+              [
+                126.33916321,
+                33.46690409
+              ],
+              [
+                126.33915493,
+                33.46691615
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005770001040998",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33953472,
+                33.46740255
+              ],
+              [
+                126.33958876,
+                33.46739498
+              ],
+              [
+                126.33958217,
+                33.46736607
+              ],
+              [
+                126.33957417,
+                33.46736686
+              ],
+              [
+                126.33955474,
+                33.46728793
+              ],
+              [
+                126.33954812,
+                33.46728897
+              ],
+              [
+                126.33954649,
+                33.46728226
+              ],
+              [
+                126.33950351,
+                33.46728931
+              ],
+              [
+                126.33950571,
+                33.46729801
+              ],
+              [
+                126.33942507,
+                33.46731255
+              ],
+              [
+                126.33944512,
+                33.4674019
+              ],
+              [
+                126.33953139,
+                33.46738714
+              ],
+              [
+                126.33953472,
+                33.46740255
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005770000040972",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33941185,
+                33.46697902
+              ],
+              [
+                126.33937227,
+                33.4670041
+              ],
+              [
+                126.33937565,
+                33.46700773
+              ],
+              [
+                126.33931078,
+                33.46705081
+              ],
+              [
+                126.33932887,
+                33.46707157
+              ],
+              [
+                126.33932715,
+                33.46707274
+              ],
+              [
+                126.33937916,
+                33.46712728
+              ],
+              [
+                126.33938379,
+                33.4671242
+              ],
+              [
+                126.33939573,
+                33.46713644
+              ],
+              [
+                126.33945325,
+                33.46712381
+              ],
+              [
+                126.33943548,
+                33.46710162
+              ],
+              [
+                126.33945505,
+                33.46708577
+              ],
+              [
+                126.33944769,
+                33.46707792
+              ],
+              [
+                126.33948174,
+                33.46705525
+              ],
+              [
+                126.33941185,
+                33.46697902
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005760000040740",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33963184,
+                33.46733298
+              ],
+              [
+                126.33973358,
+                33.46730016
+              ],
+              [
+                126.33973174,
+                33.46729556
+              ],
+              [
+                126.33977833,
+                33.46728183
+              ],
+              [
+                126.33976431,
+                33.46723965
+              ],
+              [
+                126.33973338,
+                33.46724877
+              ],
+              [
+                126.33972242,
+                33.46721995
+              ],
+              [
+                126.33968513,
+                33.46723175
+              ],
+              [
+                126.33968155,
+                33.46722217
+              ],
+              [
+                126.33962344,
+                33.46724061
+              ],
+              [
+                126.33961954,
+                33.46723374
+              ],
+              [
+                126.33958264,
+                33.46724635
+              ],
+              [
+                126.3395869,
+                33.46725917
+              ],
+              [
+                126.33958065,
+                33.4672622
+              ],
+              [
+                126.33960646,
+                33.46732843
+              ],
+              [
+                126.33962689,
+                33.4673206
+              ],
+              [
+                126.33963184,
+                33.46733298
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005770009040964",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33956805,
+                33.46696389
+              ],
+              [
+                126.33957513,
+                33.46705827
+              ],
+              [
+                126.33958064,
+                33.46705797
+              ],
+              [
+                126.33958128,
+                33.46706593
+              ],
+              [
+                126.33968051,
+                33.4670585
+              ],
+              [
+                126.33967117,
+                33.46694516
+              ],
+              [
+                126.33965447,
+                33.46694549
+              ],
+              [
+                126.33965561,
+                33.46695321
+              ],
+              [
+                126.3396183,
+                33.46695569
+              ],
+              [
+                126.33961784,
+                33.46695099
+              ],
+              [
+                126.33959324,
+                33.46695187
+              ],
+              [
+                126.33959376,
+                33.46696226
+              ],
+              [
+                126.33956805,
+                33.46696389
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005810000036206",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.3399026,
+                33.46701583
+              ],
+              [
+                126.33989795,
+                33.4669885
+              ],
+              [
+                126.33990545,
+                33.46698715
+              ],
+              [
+                126.33989145,
+                33.46693416
+              ],
+              [
+                126.33987898,
+                33.46693638
+              ],
+              [
+                126.33987332,
+                33.46692657
+              ],
+              [
+                126.33986646,
+                33.4669205
+              ],
+              [
+                126.339856,
+                33.46691457
+              ],
+              [
+                126.33984288,
+                33.46691246
+              ],
+              [
+                126.33983501,
+                33.46688503
+              ],
+              [
+                126.33974149,
+                33.46690385
+              ],
+              [
+                126.33977554,
+                33.46703106
+              ],
+              [
+                126.33980019,
+                33.46702629
+              ],
+              [
+                126.33979868,
+                33.46702066
+              ],
+              [
+                126.33980559,
+                33.46701931
+              ],
+              [
+                126.33980771,
+                33.4670221
+              ],
+              [
+                126.33982388,
+                33.46701965
+              ],
+              [
+                126.33982489,
+                33.46702683
+              ],
+              [
+                126.33987146,
+                33.46701746
+              ],
+              [
+                126.33987771,
+                33.46704073
+              ],
+              [
+                126.33990196,
+                33.46703621
+              ],
+              [
+                126.33989676,
+                33.4670167
+              ],
+              [
+                126.3399026,
+                33.46701583
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333105770013000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33990485,
+                33.46681408
+              ],
+              [
+                126.33988559,
+                33.46674723
+              ],
+              [
+                126.33992641,
+                33.46673838
+              ],
+              [
+                126.33992875,
+                33.46674612
+              ],
+              [
+                126.33994403,
+                33.46674286
+              ],
+              [
+                126.33994192,
+                33.46673512
+              ],
+              [
+                126.33998902,
+                33.46672526
+              ],
+              [
+                126.33999157,
+                33.46673367
+              ],
+              [
+                126.34002874,
+                33.46672652
+              ],
+              [
+                126.34004417,
+                33.46677822
+              ],
+              [
+                126.34000723,
+                33.46678604
+              ],
+              [
+                126.34000878,
+                33.46679158
+              ],
+              [
+                126.339961,
+                33.46680135
+              ],
+              [
+                126.3399594,
+                33.46679605
+              ],
+              [
+                126.33994458,
+                33.46679902
+              ],
+              [
+                126.33994613,
+                33.46680475
+              ],
+              [
+                126.33990485,
+                33.46681408
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005770007040810",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34010609,
+                33.46688755
+              ],
+              [
+                126.34010161,
+                33.46688999
+              ],
+              [
+                126.34009831,
+                33.46688655
+              ],
+              [
+                126.34001873,
+                33.46693982
+              ],
+              [
+                126.34003693,
+                33.46695919
+              ],
+              [
+                126.3400354,
+                33.46696014
+              ],
+              [
+                126.34005161,
+                33.46697879
+              ],
+              [
+                126.34002533,
+                33.46699673
+              ],
+              [
+                126.34001948,
+                33.46699089
+              ],
+              [
+                126.34001079,
+                33.46699697
+              ],
+              [
+                126.3400355,
+                33.46702164
+              ],
+              [
+                126.34006769,
+                33.46701377
+              ],
+              [
+                126.34008554,
+                33.46700359
+              ],
+              [
+                126.34008931,
+                33.46700759
+              ],
+              [
+                126.34017109,
+                33.46695266
+              ],
+              [
+                126.34010609,
+                33.46688755
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333105670000000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34058711,
+                33.46681619
+              ],
+              [
+                126.34060037,
+                33.46681372
+              ],
+              [
+                126.3406089,
+                33.46686045
+              ],
+              [
+                126.3406458,
+                33.46685755
+              ],
+              [
+                126.34064825,
+                33.4668814
+              ],
+              [
+                126.34071626,
+                33.46687514
+              ],
+              [
+                126.3407108,
+                33.46683009
+              ],
+              [
+                126.34073981,
+                33.46682539
+              ],
+              [
+                126.34072676,
+                33.46674057
+              ],
+              [
+                126.34074784,
+                33.46673847
+              ],
+              [
+                126.34071924,
+                33.46655028
+              ],
+              [
+                126.34058165,
+                33.46656235
+              ],
+              [
+                126.34058762,
+                33.46661006
+              ],
+              [
+                126.34057707,
+                33.46661177
+              ],
+              [
+                126.34058964,
+                33.4666904
+              ],
+              [
+                126.34063863,
+                33.46669066
+              ],
+              [
+                126.3406446,
+                33.46673748
+              ],
+              [
+                126.34057763,
+                33.46674596
+              ],
+              [
+                126.34058711,
+                33.46681619
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005730000041091",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34056914,
+                33.46729192
+              ],
+              [
+                126.34057438,
+                33.4672875
+              ],
+              [
+                126.3405942,
+                33.46730225
+              ],
+              [
+                126.34065857,
+                33.46724424
+              ],
+              [
+                126.34065378,
+                33.46724084
+              ],
+              [
+                126.34068099,
+                33.46721382
+              ],
+              [
+                126.34066372,
+                33.46719892
+              ],
+              [
+                126.34065611,
+                33.46720587
+              ],
+              [
+                126.34062973,
+                33.46718746
+              ],
+              [
+                126.34061757,
+                33.46718583
+              ],
+              [
+                126.34060926,
+                33.4671932
+              ],
+              [
+                126.34060722,
+                33.4671908
+              ],
+              [
+                126.34060089,
+                33.46719677
+              ],
+              [
+                126.34058615,
+                33.46718558
+              ],
+              [
+                126.34056676,
+                33.46720359
+              ],
+              [
+                126.3405607,
+                33.46719993
+              ],
+              [
+                126.34054359,
+                33.46721565
+              ],
+              [
+                126.34053451,
+                33.46720877
+              ],
+              [
+                126.3405001,
+                33.46724052
+              ],
+              [
+                126.34056914,
+                33.46729192
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005730000036088",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34031043,
+                33.46713382
+              ],
+              [
+                126.3402796,
+                33.46714177
+              ],
+              [
+                126.34029972,
+                33.46719814
+              ],
+              [
+                126.34033054,
+                33.46719163
+              ],
+              [
+                126.34031043,
+                33.46713382
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005730001040906",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34026516,
+                33.46730212
+              ],
+              [
+                126.34025607,
+                33.46729192
+              ],
+              [
+                126.34024767,
+                33.46729675
+              ],
+              [
+                126.34022795,
+                33.46727237
+              ],
+              [
+                126.34023221,
+                33.46726983
+              ],
+              [
+                126.34020614,
+                33.46723931
+              ],
+              [
+                126.34020278,
+                33.46724087
+              ],
+              [
+                126.34019769,
+                33.46723638
+              ],
+              [
+                126.34013518,
+                33.46727031
+              ],
+              [
+                126.34012826,
+                33.46726037
+              ],
+              [
+                126.34009343,
+                33.46728057
+              ],
+              [
+                126.34010232,
+                33.46729044
+              ],
+              [
+                126.34007976,
+                33.46730353
+              ],
+              [
+                126.34011793,
+                33.46734964
+              ],
+              [
+                126.34011457,
+                33.46735168
+              ],
+              [
+                126.34013165,
+                33.46737233
+              ],
+              [
+                126.34016518,
+                33.46735377
+              ],
+              [
+                126.34016909,
+                33.4673585
+              ],
+              [
+                126.34026516,
+                33.46730212
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005740003040812",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34022318,
+                33.46738251
+              ],
+              [
+                126.34018598,
+                33.46740776
+              ],
+              [
+                126.34018927,
+                33.46741104
+              ],
+              [
+                126.34015512,
+                33.4674352
+              ],
+              [
+                126.34016369,
+                33.46744407
+              ],
+              [
+                126.34015825,
+                33.4674477
+              ],
+              [
+                126.34017021,
+                33.46746017
+              ],
+              [
+                126.34016229,
+                33.46746585
+              ],
+              [
+                126.34018085,
+                33.46748416
+              ],
+              [
+                126.34016777,
+                33.46749388
+              ],
+              [
+                126.34018482,
+                33.46751083
+              ],
+              [
+                126.3402155,
+                33.46750662
+              ],
+              [
+                126.34021932,
+                33.46750401
+              ],
+              [
+                126.34022347,
+                33.46750737
+              ],
+              [
+                126.34029816,
+                33.46745544
+              ],
+              [
+                126.34029194,
+                33.4674492
+              ],
+              [
+                126.34029948,
+                33.46744392
+              ],
+              [
+                126.34029138,
+                33.46743584
+              ],
+              [
+                126.34028298,
+                33.46744176
+              ],
+              [
+                126.34022318,
+                33.46738251
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005740000036087",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34017746,
+                33.4675519
+              ],
+              [
+                126.34013457,
+                33.46767889
+              ],
+              [
+                126.34014578,
+                33.46768195
+              ],
+              [
+                126.34014547,
+                33.46768527
+              ],
+              [
+                126.34015075,
+                33.46768562
+              ],
+              [
+                126.34019414,
+                33.46768878
+              ],
+              [
+                126.34027154,
+                33.46768895
+              ],
+              [
+                126.34030907,
+                33.46758456
+              ],
+              [
+                126.34017746,
+                33.4675519
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333005740000040761",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33998177,
+                33.46759116
+              ],
+              [
+                126.33995108,
+                33.46759632
+              ],
+              [
+                126.33996148,
+                33.46764362
+              ],
+              [
+                126.33999152,
+                33.46763927
+              ],
+              [
+                126.33998177,
+                33.46759116
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333104800000000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.34049055,
+                33.46807386
+              ],
+              [
+                126.34053716,
+                33.4680483
+              ],
+              [
+                126.34052705,
+                33.46803535
+              ],
+              [
+                126.34054167,
+                33.46802733
+              ],
+              [
+                126.34054835,
+                33.46803589
+              ],
+              [
+                126.34056876,
+                33.46802469
+              ],
+              [
+                126.34056163,
+                33.46801606
+              ],
+              [
+                126.34061244,
+                33.46798819
+              ],
+              [
+                126.34058991,
+                33.46795895
+              ],
+              [
+                126.34052693,
+                33.46799382
+              ],
+              [
+                126.34050031,
+                33.46796022
+              ],
+              [
+                126.34056383,
+                33.46792605
+              ],
+              [
+                126.34053658,
+                33.46789114
+              ],
+              [
+                126.34041136,
+                33.46795981
+              ],
+              [
+                126.34045782,
+                33.46801983
+              ],
+              [
+                126.34045138,
+                33.4680237
+              ],
+              [
+                126.34049055,
+                33.46807386
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011110000036140",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33833335,
+                33.46711707
+              ],
+              [
+                126.33826936,
+                33.46713131
+              ],
+              [
+                126.33827092,
+                33.46713608
+              ],
+              [
+                126.3382519,
+                33.46714124
+              ],
+              [
+                126.33825834,
+                33.46716313
+              ],
+              [
+                126.33824393,
+                33.46716607
+              ],
+              [
+                126.33826247,
+                33.46722392
+              ],
+              [
+                126.33835797,
+                33.46720046
+              ],
+              [
+                126.33833335,
+                33.46711707
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333111010000000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33829846,
+                33.46678186
+              ],
+              [
+                126.33831279,
+                33.46672812
+              ],
+              [
+                126.33830335,
+                33.46672645
+              ],
+              [
+                126.33830452,
+                33.46672254
+              ],
+              [
+                126.33833265,
+                33.46672777
+              ],
+              [
+                126.33833623,
+                33.46671464
+              ],
+              [
+                126.3383741,
+                33.46672173
+              ],
+              [
+                126.33837767,
+                33.46670858
+              ],
+              [
+                126.33840274,
+                33.46671333
+              ],
+              [
+                126.33840445,
+                33.46670718
+              ],
+              [
+                126.3384296,
+                33.46671175
+              ],
+              [
+                126.33843325,
+                33.46669882
+              ],
+              [
+                126.338461,
+                33.46670405
+              ],
+              [
+                126.3384559,
+                33.46672316
+              ],
+              [
+                126.33849964,
+                33.46673156
+              ],
+              [
+                126.33849278,
+                33.46675782
+              ],
+              [
+                126.3385074,
+                33.46676072
+              ],
+              [
+                126.33850389,
+                33.46677362
+              ],
+              [
+                126.33850513,
+                33.46677386
+              ],
+              [
+                126.3384905,
+                33.4668265
+              ],
+              [
+                126.3384851,
+                33.46682552
+              ],
+              [
+                126.33848716,
+                33.46681718
+              ],
+              [
+                126.33829846,
+                33.46678186
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 12.8,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333111090001000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33842149,
+                33.46748725
+              ],
+              [
+                126.33855316,
+                33.46749239
+              ],
+              [
+                126.3385596,
+                33.46736119
+              ],
+              [
+                126.33853917,
+                33.46733091
+              ],
+              [
+                126.33854412,
+                33.46732856
+              ],
+              [
+                126.33851833,
+                33.46729034
+              ],
+              [
+                126.33851338,
+                33.46729269
+              ],
+              [
+                126.338479,
+                33.46724173
+              ],
+              [
+                126.33844663,
+                33.46725708
+              ],
+              [
+                126.33843875,
+                33.46724541
+              ],
+              [
+                126.33840195,
+                33.46726285
+              ],
+              [
+                126.33838197,
+                33.46723322
+              ],
+              [
+                126.33833571,
+                33.46725514
+              ],
+              [
+                126.33842543,
+                33.46738814
+              ],
+              [
+                126.33842149,
+                33.46748725
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 9.600000000000001,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011370001036104",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33777002,
+                33.46635541
+              ],
+              [
+                126.33775347,
+                33.46625327
+              ],
+              [
+                126.33769181,
+                33.466256
+              ],
+              [
+                126.33770676,
+                33.46635697
+              ],
+              [
+                126.33777002,
+                33.46635541
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011370001040670",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33767689,
+                33.46625213
+              ],
+              [
+                126.33766655,
+                33.46621052
+              ],
+              [
+                126.33759576,
+                33.46622664
+              ],
+              [
+                126.33760164,
+                33.46625876
+              ],
+              [
+                126.33767689,
+                33.46625213
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011350000036132",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33784914,
+                33.46626953
+              ],
+              [
+                126.33794979,
+                33.4662597
+              ],
+              [
+                126.33794112,
+                33.46619754
+              ],
+              [
+                126.33785759,
+                33.46620439
+              ],
+              [
+                126.33784905,
+                33.46620967
+              ],
+              [
+                126.33785055,
+                33.46622509
+              ],
+              [
+                126.33784097,
+                33.46622585
+              ],
+              [
+                126.33784914,
+                33.46626953
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011350000040684",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33789768,
+                33.46635085
+              ],
+              [
+                126.33794056,
+                33.46634161
+              ],
+              [
+                126.337937,
+                33.46632996
+              ],
+              [
+                126.33796113,
+                33.46632432
+              ],
+              [
+                126.33795054,
+                33.46628865
+              ],
+              [
+                126.33788383,
+                33.46630416
+              ],
+              [
+                126.33789768,
+                33.46635085
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011440001036113",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.3374352,
+                33.46638751
+              ],
+              [
+                126.33749992,
+                33.46634563
+              ],
+              [
+                126.33746375,
+                33.46630635
+              ],
+              [
+                126.33739458,
+                33.46634655
+              ],
+              [
+                126.3374352,
+                33.46638751
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011440001040797",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33749763,
+                33.46633546
+              ],
+              [
+                126.3375269,
+                33.46638989
+              ],
+              [
+                126.33756094,
+                33.4663697
+              ],
+              [
+                126.3375371,
+                33.46632233
+              ],
+              [
+                126.33749763,
+                33.46633546
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011440001041079",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33754319,
+                33.46638376
+              ],
+              [
+                126.33745951,
+                33.4664393
+              ],
+              [
+                126.33750048,
+                33.46648334
+              ],
+              [
+                126.33758655,
+                33.46642519
+              ],
+              [
+                126.33754319,
+                33.46638376
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011190001036265",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33781135,
+                33.46648562
+              ],
+              [
+                126.33784209,
+                33.46644702
+              ],
+              [
+                126.33782351,
+                33.46642925
+              ],
+              [
+                126.33778143,
+                33.46646004
+              ],
+              [
+                126.33781135,
+                33.46648562
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011210000041058",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33786278,
+                33.46642174
+              ],
+              [
+                126.33789728,
+                33.46643292
+              ],
+              [
+                126.33791236,
+                33.46640023
+              ],
+              [
+                126.33787785,
+                33.46638905
+              ],
+              [
+                126.33786278,
+                33.46642174
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011190001036266",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33769138,
+                33.46653019
+              ],
+              [
+                126.3377357,
+                33.46656516
+              ],
+              [
+                126.33781122,
+                33.46651008
+              ],
+              [
+                126.33778125,
+                33.46646905
+              ],
+              [
+                126.33773789,
+                33.46649785
+              ],
+              [
+                126.33773597,
+                33.46649577
+              ],
+              [
+                126.33770365,
+                33.46651733
+              ],
+              [
+                126.33770621,
+                33.46652005
+              ],
+              [
+                126.33769138,
+                33.46653019
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011190001040669",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33768255,
+                33.46647637
+              ],
+              [
+                126.33775499,
+                33.46642825
+              ],
+              [
+                126.33772842,
+                33.46640527
+              ],
+              [
+                126.33770185,
+                33.46641937
+              ],
+              [
+                126.33769662,
+                33.46641357
+              ],
+              [
+                126.3376544,
+                33.466442
+              ],
+              [
+                126.33768255,
+                33.46647637
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011160001040667",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33751325,
+                33.46667238
+              ],
+              [
+                126.33743341,
+                33.46664716
+              ],
+              [
+                126.33742334,
+                33.46666903
+              ],
+              [
+                126.33744366,
+                33.46668437
+              ],
+              [
+                126.33749875,
+                33.46670119
+              ],
+              [
+                126.33751325,
+                33.46667238
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011160001036267",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33743839,
+                33.46664241
+              ],
+              [
+                126.33740921,
+                33.46662564
+              ],
+              [
+                126.33737738,
+                33.46664094
+              ],
+              [
+                126.3374224,
+                33.46666842
+              ],
+              [
+                126.33743201,
+                33.46664652
+              ],
+              [
+                126.33743631,
+                33.4666478
+              ],
+              [
+                126.33743839,
+                33.46664241
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011160001036268",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33768142,
+                33.46659754
+              ],
+              [
+                126.33764329,
+                33.4666737
+              ],
+              [
+                126.33768952,
+                33.46668903
+              ],
+              [
+                126.33772559,
+                33.46661493
+              ],
+              [
+                126.33768142,
+                33.46659754
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011160001040918",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33756397,
+                33.46658023
+              ],
+              [
+                126.33762808,
+                33.46659455
+              ],
+              [
+                126.33763922,
+                33.46655819
+              ],
+              [
+                126.33757435,
+                33.46654423
+              ],
+              [
+                126.33756397,
+                33.46658023
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011160001040917",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33754542,
+                33.46660051
+              ],
+              [
+                126.33753281,
+                33.46663218
+              ],
+              [
+                126.33753775,
+                33.46663356
+              ],
+              [
+                126.33751475,
+                33.46668717
+              ],
+              [
+                126.33758665,
+                33.46670946
+              ],
+              [
+                126.33762129,
+                33.46662535
+              ],
+              [
+                126.33754542,
+                33.46660051
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011200001036121",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33786925,
+                33.46649173
+              ],
+              [
+                126.33786818,
+                33.46651196
+              ],
+              [
+                126.33781903,
+                33.46650832
+              ],
+              [
+                126.33780966,
+                33.46658115
+              ],
+              [
+                126.33789182,
+                33.46658776
+              ],
+              [
+                126.33789045,
+                33.46659839
+              ],
+              [
+                126.33798148,
+                33.4666052
+              ],
+              [
+                126.33798833,
+                33.46654844
+              ],
+              [
+                126.33796908,
+                33.46654744
+              ],
+              [
+                126.33797267,
+                33.46649931
+              ],
+              [
+                126.33786925,
+                33.46649173
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011170000040666",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33777938,
+                33.46675806
+              ],
+              [
+                126.33778325,
+                33.4667596
+              ],
+              [
+                126.33780481,
+                33.46672116
+              ],
+              [
+                126.33780661,
+                33.46671764
+              ],
+              [
+                126.33780729,
+                33.46671484
+              ],
+              [
+                126.33780561,
+                33.46671274
+              ],
+              [
+                126.33780223,
+                33.46671138
+              ],
+              [
+                126.33780289,
+                33.46670753
+              ],
+              [
+                126.33780226,
+                33.46670403
+              ],
+              [
+                126.33779942,
+                33.46670072
+              ],
+              [
+                126.33779546,
+                33.46669817
+              ],
+              [
+                126.33779045,
+                33.46669756
+              ],
+              [
+                126.33778598,
+                33.46669824
+              ],
+              [
+                126.33778206,
+                33.46670013
+              ],
+              [
+                126.33777914,
+                33.46670264
+              ],
+              [
+                126.33777599,
+                33.46670137
+              ],
+              [
+                126.33777262,
+                33.46670167
+              ],
+              [
+                126.3377706,
+                33.46670381
+              ],
+              [
+                126.33776884,
+                33.46670679
+              ],
+              [
+                126.33772262,
+                33.46668875
+              ],
+              [
+                126.33768316,
+                33.46675928
+              ],
+              [
+                126.33770589,
+                33.46677269
+              ],
+              [
+                126.33771908,
+                33.46677789
+              ],
+              [
+                126.33771792,
+                33.46677995
+              ],
+              [
+                126.33773532,
+                33.46678687
+              ],
+              [
+                126.33773646,
+                33.46678463
+              ],
+              [
+                126.33774731,
+                33.46678887
+              ],
+              [
+                126.3377653,
+                33.46678332
+              ],
+              [
+                126.33777938,
+                33.46675806
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 12.8,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333111230001000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33803533,
+                33.46663397
+              ],
+              [
+                126.33803746,
+                33.46667056
+              ],
+              [
+                126.33812424,
+                33.46671348
+              ],
+              [
+                126.33821844,
+                33.46670207
+              ],
+              [
+                126.3382196,
+                33.4666821
+              ],
+              [
+                126.33815317,
+                33.46664853
+              ],
+              [
+                126.33803533,
+                33.46663397
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 12.8,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011230002036097",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33807665,
+                33.46656827
+              ],
+              [
+                126.33811746,
+                33.46660563
+              ],
+              [
+                126.33819245,
+                33.46654689
+              ],
+              [
+                126.33815131,
+                33.46650997
+              ],
+              [
+                126.33807665,
+                33.46656827
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011230002040926",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33820764,
+                33.46657257
+              ],
+              [
+                126.33815072,
+                33.46663015
+              ],
+              [
+                126.33820865,
+                33.4666512
+              ],
+              [
+                126.33823058,
+                33.46661083
+              ],
+              [
+                126.33822582,
+                33.46658683
+              ],
+              [
+                126.33820764,
+                33.46657257
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333111450001000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33727256,
+                33.46654881
+              ],
+              [
+                126.33726978,
+                33.46635343
+              ],
+              [
+                126.33737367,
+                33.46635256
+              ],
+              [
+                126.33737506,
+                33.46639431
+              ],
+              [
+                126.33738445,
+                33.46639484
+              ],
+              [
+                126.33738474,
+                33.46650576
+              ],
+              [
+                126.33737535,
+                33.46650595
+              ],
+              [
+                126.33737588,
+                33.46654829
+              ],
+              [
+                126.33727256,
+                33.46654881
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 12.8,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333111150001000001",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33739696,
+                33.46683625
+              ],
+              [
+                126.33743259,
+                33.46687303
+              ],
+              [
+                126.33744763,
+                33.46688113
+              ],
+              [
+                126.3374981,
+                33.46689065
+              ],
+              [
+                126.33757062,
+                33.46679615
+              ],
+              [
+                126.33757284,
+                33.46677609
+              ],
+              [
+                126.3374717,
+                33.46672289
+              ],
+              [
+                126.337444,
+                33.46675988
+              ],
+              [
+                126.33745129,
+                33.46676371
+              ],
+              [
+                126.33739696,
+                33.46683625
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011130000040915",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33739249,
+                33.46696347
+              ],
+              [
+                126.33746429,
+                33.46698312
+              ],
+              [
+                126.33750447,
+                33.46697622
+              ],
+              [
+                126.3374965,
+                33.46695569
+              ],
+              [
+                126.33750152,
+                33.46693146
+              ],
+              [
+                126.3374164,
+                33.46692064
+              ],
+              [
+                126.33739249,
+                33.46696347
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011130000040790",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33760009,
+                33.46695335
+              ],
+              [
+                126.33761886,
+                33.4669465
+              ],
+              [
+                126.33771743,
+                33.46684326
+              ],
+              [
+                126.33766381,
+                33.46680727
+              ],
+              [
+                126.33767182,
+                33.4668001
+              ],
+              [
+                126.33762368,
+                33.46676576
+              ],
+              [
+                126.33758249,
+                33.4668062
+              ],
+              [
+                126.33759019,
+                33.46681174
+              ],
+              [
+                126.33755453,
+                33.46684816
+              ],
+              [
+                126.33756533,
+                33.46685561
+              ],
+              [
+                126.33753206,
+                33.46688843
+              ],
+              [
+                126.33753813,
+                33.46691019
+              ],
+              [
+                126.33760009,
+                33.46695335
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333011240000040677",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.33825448,
+                33.46662322
+              ],
+              [
+                126.33825467,
+                33.46667405
+              ],
+              [
+                126.33833953,
+                33.46667193
+              ],
+              [
+                126.33833923,
+                33.46662119
+              ],
+              [
+                126.33825448,
+                33.46662322
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 3.2,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "id": "5011025333010990000040764",
+        "footprint": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                126.3386212,
+                33.4665154
+              ],
+              [
+                126.33853047,
+                33.46648792
+              ],
+              [
+                126.33852216,
+                33.46650495
+              ],
+              [
+                126.33851604,
+                33.46650305
+              ],
+              [
+                126.33849141,
+                33.46655915
+              ],
+              [
+                126.33858611,
+                33.46658956
+              ],
+              [
+                126.3386212,
+                33.4665154
+              ]
+            ]
+          ]
+        },
+        "heightM": {
+          "value": 6.4,
+          "evidence": [
+            {
+              "provider": "국토교통부",
+              "datasetId": "15083092",
+              "sourceUrl": "https://www.data.go.kr/data/15083092/fileData.do",
+              "observedAt": "2026-09-08T08:42:17.047Z",
+              "effectiveAt": "2026-01-01T00:00:00.000Z",
+              "licenseCode": "public-data-unrestricted",
+              "rawSnapshotId": "ctx-bldg-1788856937047",
+              "confidence": "derived"
+            }
+          ],
+          "warnings": []
+        }
+      }
+    ],
+    "market": {
+      "officialLandPricePerSqm": {
+        "value": 567600,
+        "evidence": [
+          {
+            "provider": "국토교통부",
+            "datasetId": "15123549",
+            "sourceUrl": "https://www.data.go.kr/data/15123549/openapi.do",
+            "observedAt": "2026-09-08T08:42:17.060Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "public-data-unrestricted",
+            "rawSnapshotId": "landprice-1788856937060",
+            "confidence": "verified"
+          }
+        ],
+        "warnings": []
+      },
+      "comparableMedianPerSqm": {
+        "value": null,
+        "evidence": [
+          {
+            "provider": "국토교통부",
+            "datasetId": "15126466",
+            "sourceUrl": "https://www.data.go.kr/data/15126466/openapi.do",
+            "observedAt": "2026-09-08T08:42:17.337Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "public-data-unrestricted",
+            "rawSnapshotId": "landtx-1788856937337",
+            "confidence": "derived"
+          }
+        ],
+        "derivation": "comparable-median:v2:same-legal-neighborhood,land-category,zoning,last-six-months",
+        "warnings": []
+      },
+      "comparableCount": {
+        "value": 0,
+        "evidence": [
+          {
+            "provider": "국토교통부",
+            "datasetId": "15126466",
+            "sourceUrl": "https://www.data.go.kr/data/15126466/openapi.do",
+            "observedAt": "2026-09-08T08:42:17.337Z",
+            "effectiveAt": "2026-01-01T00:00:00.000Z",
+            "licenseCode": "public-data-unrestricted",
+            "rawSnapshotId": "landtx-1788856937337",
+            "confidence": "verified"
+          }
+        ],
+        "warnings": []
+      },
+      "trendPercent": {
+        "value": null,
+        "evidence": [],
+        "warnings": [
+          "복수 월 거래 데이터 비교 전 추세 산출 불가"
+        ]
+      }
+    },
+    "demand": {
+      "population1km": {
+        "value": null,
+        "evidence": [],
+        "warnings": [
+          "SGIS 연결 전 조회 불가"
+        ]
+      },
+      "households1km": {
+        "value": null,
+        "evidence": [],
+        "warnings": [
+          "SGIS 연결 전 조회 불가"
+        ]
+      },
+      "businesses500m": {
+        "value": null,
+        "evidence": [],
+        "warnings": [
+          "상권 API 연결 전 조회 불가"
+        ]
+      },
+      "transitStops500m": {
+        "value": null,
+        "evidence": [],
+        "warnings": [
+          "교통 API 연결 전 조회 불가"
+        ]
+      }
+    },
+    "climate": {
+      "annualSunlightHours": {
+        "value": null,
+        "evidence": [],
+        "warnings": [
+          "기상 API 미연결"
+        ]
+      },
+      "solarRadiationKwhM2": {
+        "value": null,
+        "evidence": [],
+        "warnings": [
+          "기상 API 미연결"
+        ]
+      },
+      "prevailingWind": {
+        "value": null,
+        "evidence": [],
+        "warnings": []
+      }
+    },
+    "risks": [
+      {
+        "code": "FLOOD",
+        "label": "도시침수",
+        "level": "unknown",
+        "finding": {
+          "value": null,
+          "evidence": [],
+          "warnings": [
+            "침수 위험지도 연결 전"
+          ]
+        },
+        "nextAction": "공식 홍수위험지도에서 대상 필지 확인"
+      },
+      {
+        "code": "HERITAGE",
+        "label": "국가유산",
+        "level": "unknown",
+        "finding": {
+          "value": null,
+          "evidence": [],
+          "warnings": [
+            "유산 공간규제 연결 전"
+          ]
+        },
+        "nextAction": "인허가 전 최신 공간규제 재조회"
+      },
+      {
+        "code": "GROUND",
+        "label": "지하안전",
+        "level": "unknown",
+        "finding": {
+          "value": null,
+          "evidence": [],
+          "warnings": [
+            "지하안전 API 연결 전"
+          ]
+        },
+        "nextAction": "지반조사 및 인접 굴착계획 확인"
+      }
+    ],
+    "scenarios": [
+      {
+        "id": "yield",
+        "name": "최대 용적",
+        "strategy": "max_yield",
+        "buildingCoverageRatio": 43.7,
+        "floorAreaRatio": 145.7,
+        "grossFloorAreaSqm": 1317,
+        "floors": [
+          {
+            "floor": 1,
+            "footprintScale": 1,
+            "heightM": 3.3
+          },
+          {
+            "floor": 2,
+            "footprintScale": 1,
+            "heightM": 3.3
+          },
+          {
+            "floor": 3,
+            "footprintScale": 1,
+            "heightM": 3.3
+          },
+          {
+            "floor": 4,
+            "footprintScale": 0.5773502691896261,
+            "heightM": 3.3
+          }
+        ],
+        "estimatedRevenueKrw": 0,
+        "estimatedCostKrw": 4280250000,
+        "estimatedProfitRatePercent": 0,
+        "isPreliminaryOnly": true,
+        "massing": {
+          "center": {
+            "longitude": 126.338970015,
+            "latitude": 33.467566762
+          },
+          "widthM": 21.560650196389826,
+          "depthM": 18.326552666931352,
+          "rotationRad": 2.8797932657906435,
+          "footprint": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  126.33910768721645,
+                  33.467621207668486
+                ],
+                [
+                  126.33888342095308,
+                  33.46767133618893
+                ],
+                [
+                  126.33883234278355,
+                  33.46751231633151
+                ],
+                [
+                  126.33905660904692,
+                  33.467462187811066
+                ],
+                [
+                  126.33910768721645,
+                  33.467621207668486
+                ]
+              ]
+            ]
+          },
+          "floorAreasSqm": [
+            395.13239135742197,
+            395.13239135742197,
+            395.13239135742197,
+            131.7107971191408
+          ],
+          "notes": [
+            "실제 경계 내부 직사각형 배치 탐색 · 법정 이격·주차·높이 검증 전",
+            "필지 형상으로 인해 목표 연면적을 모두 배치하지 못했습니다."
+          ]
+        }
+      },
+      {
+        "id": "balanced",
+        "name": "균형 개발",
+        "strategy": "balanced",
+        "buildingCoverageRatio": 43.7,
+        "floorAreaRatio": 142.4,
+        "grossFloorAreaSqm": 1287,
+        "floors": [
+          {
+            "floor": 1,
+            "footprintScale": 1,
+            "heightM": 3.3
+          },
+          {
+            "floor": 2,
+            "footprintScale": 1,
+            "heightM": 3.3
+          },
+          {
+            "floor": 3,
+            "footprintScale": 1,
+            "heightM": 3.3
+          },
+          {
+            "floor": 4,
+            "footprintScale": 0.5091750772173155,
+            "heightM": 3.3
+          }
+        ],
+        "estimatedRevenueKrw": 0,
+        "estimatedCostKrw": 4182750000,
+        "estimatedProfitRatePercent": 0,
+        "isPreliminaryOnly": true,
+        "massing": {
+          "center": {
+            "longitude": 126.338970015,
+            "latitude": 33.467566762
+          },
+          "widthM": 21.5541700986808,
+          "depthM": 18.321044583878678,
+          "rotationRad": 2.8797932657906435,
+          "footprint": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  126.3391076458388,
+                  33.46762119130473
+                ],
+                [
+                  126.3388834469791,
+                  33.46767130475894
+                ],
+                [
+                  126.33883238416121,
+                  33.467512332695264
+                ],
+                [
+                  126.3390565830209,
+                  33.46746221924106
+                ],
+                [
+                  126.3391076458388,
+                  33.46762119130473
+                ]
+              ]
+            ]
+          },
+          "floorAreasSqm": [
+            394.8949113464356,
+            394.8949113464356,
+            394.8949113464356,
+            102.38016220092771
+          ],
+          "notes": [
+            "실제 경계 내부 직사각형 배치 탐색 · 법정 이격·주차·높이 검증 전",
+            "필지 형상으로 인해 목표 연면적을 모두 배치하지 못했습니다."
+          ]
+        }
+      },
+      {
+        "id": "quality",
+        "name": "공간 품질",
+        "strategy": "quality",
+        "buildingCoverageRatio": 43.7,
+        "floorAreaRatio": 134.6,
+        "grossFloorAreaSqm": 1217,
+        "floors": [
+          {
+            "floor": 1,
+            "footprintScale": 1,
+            "heightM": 3.3
+          },
+          {
+            "floor": 2,
+            "footprintScale": 1,
+            "heightM": 3.3
+          },
+          {
+            "floor": 3,
+            "footprintScale": 1,
+            "heightM": 3.3
+          },
+          {
+            "floor": 4,
+            "footprintScale": 0.27735009811261496,
+            "heightM": 3.3
+          }
+        ],
+        "estimatedRevenueKrw": 0,
+        "estimatedCostKrw": 3955250000,
+        "estimatedProfitRatePercent": 0,
+        "isPreliminaryOnly": true,
+        "massing": {
+          "center": {
+            "longitude": 126.338970015,
+            "latitude": 33.467566762
+          },
+          "widthM": 21.569144346737854,
+          "depthM": 18.333772694727177,
+          "rotationRad": 2.8797932657906435,
+          "footprint": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  126.33910774145455,
+                  33.467621229118194
+                ],
+                [
+                  126.33888338683802,
+                  33.46767137738754
+                ],
+                [
+                  126.33883228854545,
+                  33.4675122948818
+                ],
+                [
+                  126.33905664316198,
+                  33.467462146612455
+                ],
+                [
+                  126.33910774145455,
+                  33.467621229118194
+                ]
+              ]
+            ]
+          },
+          "floorAreasSqm": [
+            395.4437896728515,
+            395.4437896728515,
+            395.4437896728515,
+            30.418753051757896
+          ],
+          "notes": [
+            "실제 경계 내부 직사각형 배치 탐색 · 법정 이격·주차·높이 검증 전",
+            "필지 형상으로 인해 목표 연면적을 모두 배치하지 못했습니다."
+          ]
+        }
+      }
+    ],
+    "sourceStatus": [
+      {
+        "id": "juso",
+        "label": "주소·좌표",
+        "status": "available",
+        "detail": "조회 완료",
+        "observedAt": "2026-09-08T08:42:16.765Z"
+      },
+      {
+        "id": "cadastral",
+        "label": "필지 경계",
+        "status": "available",
+        "detail": "조회 완료",
+        "observedAt": "2026-09-08T08:42:17.027Z"
+      },
+      {
+        "id": "characteristics",
+        "label": "토지특성",
+        "status": "available",
+        "detail": "조회 완료",
+        "observedAt": "2026-09-08T08:42:17.051Z"
+      },
+      {
+        "id": "building",
+        "label": "건축물대장",
+        "status": "available",
+        "detail": "조회 완료",
+        "observedAt": "2026-09-08T08:42:17.034Z"
+      },
+      {
+        "id": "context",
+        "label": "주변 건물",
+        "status": "partial",
+        "detail": "높이 미제공 건물은 층수×3.2m 또는 9m 추정",
+        "observedAt": "2026-09-08T08:42:17.047Z"
+      },
+      {
+        "id": "price",
+        "label": "공시지가",
+        "status": "available",
+        "detail": "조회 완료",
+        "observedAt": "2026-09-08T08:42:17.060Z"
+      },
+      {
+        "id": "planning",
+        "label": "토지이용계획",
+        "status": "available",
+        "detail": "조회 완료",
+        "observedAt": "2026-09-08T08:42:17.075Z"
+      },
+      {
+        "id": "transactions",
+        "label": "토지 실거래",
+        "status": "available",
+        "detail": "조회 완료",
+        "observedAt": "2026-09-08T08:42:17.337Z"
+      },
+      {
+        "id": "weather",
+        "label": "ASOS 기상",
+        "status": "unavailable",
+        "detail": "서비스 키 인증 또는 활용승인 확인 필요",
+        "observedAt": "2026-09-08T08:42:17.065Z"
+      }
+    ],
+    "reviewNotes": [
+      "모든 배치안은 규제 검증 전 기하학적 비교안입니다. 건축 가능 규모나 투자 권고가 아닙니다.",
+      "토지이용계획의 포함·저촉·접함과 조례·고도·경관·어항 등 조건을 건축사가 확인해야 합니다.",
+      "주차대수·차량 진입·회차·건축선·이격거리·피난·철거/리모델링 가능성은 자동 검증되지 않았습니다.",
+      "건설비는 연면적×325만원/㎡ 가정의 공사비입니다. 토지·철거·설계·세금·금융·예비비는 별도입니다.",
+      "토지 실거래 단가를 신축 건물 매출로 환산하지 않습니다. 용도·분양가/임대료·가동률 입력 후 사업성 검토가 필요합니다.",
+      "여러 용도지역에 저촉됩니다. 구역별 면적과 적용기준 확인 전 단일 건폐율/용적률을 확정할 수 없습니다.",
+      "토지특성 지형 분류: 완경사 · 측량 경사도(%)와 다릅니다.",
+      "도로접면 분류: 소로각지 · 실제 도로 폭과 법정 접도는 별도 확인합니다.",
+      "침수·국가유산·지하안전·인구/수요는 전용 조회 미구현입니다. 데이터가 없다는 사실을 위험 없음으로 해석하지 않습니다.",
+      "비교 표본은 최근 6개월 동일 법정동·지목·용도지역 토지 거래입니다. 해안 접근성·면적·도로 조건에 따른 보정은 미적용입니다.",
+      "12개월 가격 추세는 동일 조건의 시계열 표본 집계 미구현으로 제공하지 않습니다."
+    ],
+    "pipelineVersion": 2,
+    "coverage": {
+      "percent": 76,
+      "verifiedFacts": 22,
+      "derivedFacts": 72,
+      "estimatedFacts": 0,
+      "missingFacts": 15
+    }
+  },
+  "meta": {
+    "requestId": "32ae66a1-34df-427b-8d67-ae24c95a3f55",
+    "generatedAt": "2026-09-08T08:42:17.606Z",
+    "mode": "live",
+    "durationMs": 1438
+  }
+}

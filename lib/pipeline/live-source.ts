@@ -1,3 +1,7 @@
+import {
+  createProgressTracker,
+  type AnalysisOptions,
+} from '@/lib/pipeline/progress';
 /**
  * Live data source: orchestrates real API connectors for the preview pipeline.
  *
@@ -16,7 +20,10 @@ import type { BuildingLedgerOutput } from '@/lib/external-apis/connectors/buildi
 import { createLandPriceConnector } from '@/lib/external-apis/connectors/land-price';
 import type { LandPriceOutput } from '@/lib/external-apis/connectors/land-price';
 import { createLandTransactionConnector } from '@/lib/external-apis/connectors/land-transaction';
-import type { LandTransactionOutput, LandTransactionItem } from '@/lib/external-apis/connectors/land-transaction';
+import type {
+  LandTransactionOutput,
+  LandTransactionItem,
+} from '@/lib/external-apis/connectors/land-transaction';
 import { createKmaWeatherConnector } from '@/lib/external-apis/connectors/kma-weather';
 import type { KmaWeatherOutput } from '@/lib/external-apis/connectors/kma-weather';
 import { createLandUsePlanConnector } from '@/lib/external-apis/connectors/land-use-plan';
@@ -64,7 +71,6 @@ export function liveEvidence(
     datasetId: manifest.datasetId,
     sourceUrl: manifest.sourceUrl,
     observedAt: result.observedAt,
-    effectiveAt: new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1)).toISOString(),
     licenseCode: manifest.licenseCode,
     coordinateSystem: manifest.coordinateSystem,
     rawSnapshotId: result.rawSnapshotId,
@@ -77,10 +83,22 @@ export function liveEvidence(
 // ---------------------------------------------------------------------------
 
 const ADMIN_TO_STATION: Record<string, string> = {
-  '11': '108', '26': '159', '27': '143', '28': '112',
-  '29': '156', '30': '133', '31': '152', '36': '133',
-  '41': '108', '42': '101', '43': '131', '44': '129',
-  '45': '146', '46': '156', '47': '143', '48': '155',
+  '11': '108',
+  '26': '159',
+  '27': '143',
+  '28': '112',
+  '29': '156',
+  '30': '133',
+  '31': '152',
+  '36': '133',
+  '41': '108',
+  '42': '101',
+  '43': '131',
+  '44': '129',
+  '45': '146',
+  '46': '156',
+  '47': '143',
+  '48': '155',
   '50': '184',
 };
 
@@ -109,14 +127,26 @@ function unwrapSettled<T>(
 // Main fetch
 // ---------------------------------------------------------------------------
 
-export async function fetchLiveSourceData(address: string): Promise<LiveSourceData> {
+export async function fetchLiveSourceData(
+  address: string,
+  options: AnalysisOptions = {},
+): Promise<LiveSourceData> {
   const warnings: string[] = [];
+  const { start, track } = createProgressTracker(options.onProgress);
+  const signal = options.signal;
+  signal?.throwIfAborted();
 
   // Step 1: address → PNU + coordinates (gate for downstream calls)
-  const juso = await createJusoAddressConnector().execute({ address });
+  start('address', 1);
+  const juso = await track('address', () =>
+    createJusoAddressConnector().execute({ address }, signal),
+  );
 
   if (!juso.data) {
     const skip = '주소 해석 실패로 조회 불가';
+    for (const step of ['building', 'market', 'planning', 'weather'] as const) {
+      options.onProgress?.({ step, status: 'skipped', message: skip });
+    }
     return {
       juso,
       building: emptyResult<BuildingLedgerOutput>(skip),
@@ -129,7 +159,10 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
       landCharacteristics: emptyResult<LandCharacteristicsOutput>(skip),
       pnuCode: null,
       adminCode: null,
-      warnings: [...juso.warnings, '주소 해석 실패로 후속 조회를 건너뛰었습니다.'],
+      warnings: [
+        ...juso.warnings,
+        '주소 해석 실패로 후속 조회를 건너뛰었습니다.',
+      ],
     };
   }
 
@@ -146,7 +179,9 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
   const txMonths: string[] = [];
   for (let i = 1; i <= 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    txMonths.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`);
+    txMonths.push(
+      `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`,
+    );
   }
 
   // Weather query: previous full year, nearest station
@@ -157,16 +192,67 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
   const txConnector = createLandTransactionConnector();
   const lat0 = juso.data.latitude;
   const lon0 = juso.data.longitude;
-  const [bldg, price, wx, lup, cad, ctxBldg, landChar, ...txSettled] = await Promise.allSettled([
-    createBuildingLedgerConnector().execute({ sigunguCode, bjdongCode, bun, ji }),
-    createLandPriceConnector().execute({ pnuCode: pnu }),
-    createKmaWeatherConnector().execute({ stationId: stnId, startDate: `${lastYear}0101`, endDate: `${lastYear}1231` }),
-    createLandUsePlanConnector().execute({ pnuCode: pnu }),
-    createCadastralBoundaryConnector().execute({ pnuCode: pnu }),
-    (lat0 && lon0) ? createContextBuildingsConnector().execute({ centerLat: lat0, centerLon: lon0, radiusM: 150 }) : Promise.resolve(emptyResult<ContextBuildingsOutput>('좌표 미확인으로 주변 건물 조회 불가')),
-    createLandCharacteristicsConnector().execute({ pnuCode: pnu }),
-    ...txMonths.map((ym) => txConnector.execute({ lawdCode: sigunguCode, dealYearMonth: ym })),
-  ]);
+  signal?.throwIfAborted();
+  start('building', 1);
+  start('market', 1 + txMonths.length);
+  start('planning', 4);
+  start('weather', 1);
+  const [bldg, price, wx, lup, cad, ctxBldg, landChar, ...txSettled] =
+    await Promise.allSettled([
+      track('building', () =>
+        createBuildingLedgerConnector().execute(
+          { sigunguCode, bjdongCode, bun, ji },
+          signal,
+        ),
+      ),
+      track('market', () =>
+        createLandPriceConnector().execute({ pnuCode: pnu }, signal),
+      ),
+      track('weather', () =>
+        createKmaWeatherConnector().execute(
+          {
+            stationId: stnId,
+            startDate: `${lastYear}0101`,
+            endDate: `${lastYear}1231`,
+          },
+          signal,
+        ),
+      ),
+      track('planning', () =>
+        createLandUsePlanConnector().execute({ pnuCode: pnu }, signal),
+      ),
+      track('planning', () =>
+        createCadastralBoundaryConnector().execute({ pnuCode: pnu }, signal),
+      ),
+      track('planning', () =>
+        lat0 && lon0
+          ? createContextBuildingsConnector().execute(
+              {
+                centerLat: lat0,
+                centerLon: lon0,
+                radiusM: 150,
+                targetPnu: pnu,
+              },
+              signal,
+            )
+          : Promise.resolve(
+              emptyResult<ContextBuildingsOutput>(
+                '좌표 미확인으로 주변 건물 조회 불가',
+              ),
+            ),
+      ),
+      track('planning', () =>
+        createLandCharacteristicsConnector().execute({ pnuCode: pnu }, signal),
+      ),
+      ...txMonths.map((ym) =>
+        track('market', () =>
+          txConnector.execute(
+            { lawdCode: sigunguCode, dealYearMonth: ym },
+            signal,
+          ),
+        ),
+      ),
+    ]);
 
   const building = unwrapSettled(bldg, '건축물대장 조회 실패');
   const landPrice = unwrapSettled(price, '공시지가 조회 실패');
@@ -181,34 +267,80 @@ export async function fetchLiveSourceData(address: string): Promise<LiveSourceDa
   let txSnapshot = `landtx-merged-${Date.now()}`;
   let txObserved = new Date().toISOString();
   const txWarnings: string[] = [];
+  let txSuccess = 0;
   for (const settled of txSettled) {
-    const r = unwrapSettled<LandTransactionOutput>(settled, '실거래가 조회 실패');
+    const r = unwrapSettled<LandTransactionOutput>(
+      settled,
+      '실거래가 조회 실패',
+    );
     if (r.data) {
+      txSuccess++;
       allTxItems.push(...r.data);
       txSnapshot = r.rawSnapshotId;
       txObserved = r.observedAt;
     }
     if (r.warnings.length) txWarnings.push(...r.warnings);
   }
-  const transactions: ConnectorResult<LandTransactionOutput> = allTxItems.length > 0
-    ? { data: allTxItems, rawSnapshotId: txSnapshot, observedAt: txObserved, warnings: txWarnings }
-    : { data: null, rawSnapshotId: txSnapshot, observedAt: txObserved, warnings: txWarnings.length ? txWarnings : ['6개월간 거래 내역 없음'] };
+  const transactions: ConnectorResult<LandTransactionOutput> =
+    allTxItems.length > 0
+      ? {
+          data: allTxItems,
+          rawSnapshotId: txSnapshot,
+          observedAt: txObserved,
+          warnings: txWarnings,
+        }
+      : {
+          data: txSuccess === txMonths.length ? [] : null,
+          rawSnapshotId: txSnapshot,
+          observedAt: txObserved,
+          warnings: txWarnings.length ? txWarnings : ['6개월간 거래 내역 없음'],
+        };
 
-  for (const r of [building, landPrice, transactions, weather, landUsePlan, cadastralBoundary, contextBuildings, landCharacteristics]) {
+  for (const r of [
+    building,
+    landPrice,
+    transactions,
+    weather,
+    landUsePlan,
+    cadastralBoundary,
+    contextBuildings,
+    landCharacteristics,
+  ]) {
     if (!r.data && r.warnings.length) warnings.push(...r.warnings);
   }
 
   // Fix coordinates from cadastral boundary centroid if juso returned 0,0
-  if (juso.data && (juso.data.latitude === 0 || juso.data.longitude === 0) && cadastralBoundary.data) {
+  if (
+    juso.data &&
+    (juso.data.latitude === 0 || juso.data.longitude === 0) &&
+    cadastralBoundary.data
+  ) {
     const ring = cadastralBoundary.data.coordinates[0];
     if (ring && ring.length > 2) {
-      let sumLon = 0, sumLat = 0;
-      for (const [lon, lat] of ring) { sumLon += lon; sumLat += lat; }
+      let sumLon = 0,
+        sumLat = 0;
+      for (const [lon, lat] of ring) {
+        sumLon += lon;
+        sumLat += lat;
+      }
       juso.data.longitude = sumLon / ring.length;
       juso.data.latitude = sumLat / ring.length;
       warnings.push('좌표를 지적도 폴리곤 중심점에서 보정했습니다.');
     }
   }
 
-  return { juso, building, landPrice, transactions, weather, landUsePlan, cadastralBoundary, contextBuildings, landCharacteristics, pnuCode: pnu, adminCode, warnings };
+  return {
+    juso,
+    building,
+    landPrice,
+    transactions,
+    weather,
+    landUsePlan,
+    cadastralBoundary,
+    contextBuildings,
+    landCharacteristics,
+    pnuCode: pnu,
+    adminCode,
+    warnings,
+  };
 }

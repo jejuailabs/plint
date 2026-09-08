@@ -3,7 +3,10 @@
 import { Settings2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { DevelopmentScenario, MassFloor } from '@/lib/domain/parcel-intelligence';
+import type {
+  DevelopmentScenario,
+  MassFloor,
+} from '@/lib/domain/parcel-intelligence';
 
 type CustomParams = {
   coveragePercent: number;
@@ -16,6 +19,7 @@ type CustomParams = {
 
 type Props = {
   areaSqm: number;
+  appliedScenario?: DevelopmentScenario;
   maxCoverage: number;
   maxFar: number;
   comparablePricePerSqm: number;
@@ -32,29 +36,34 @@ function buildCustomScenario(
   landPricePerSqm: number,
 ): DevelopmentScenario {
   const footprintSqm = areaSqm * (params.coveragePercent / 100);
-  const grossFloorAreaSqm = areaSqm * (params.farPercent / 100);
+  const grossFloorAreaSqm = Math.min(
+    areaSqm * (params.farPercent / 100),
+    footprintSqm * params.floors,
+  );
   const floorCount = params.floors;
 
   const floors: MassFloor[] = Array.from({ length: floorCount }, (_, i) => ({
     floor: i + 1,
-    footprintScale: Math.max(0.65, 1 - Math.max(0, i - 2) * 0.06),
+    footprintScale: 1,
     heightM: i === 0 ? params.groundFloorHeightM : params.typicalFloorHeightM,
   }));
 
-  const estimatedRevenueKrw = Math.round(grossFloorAreaSqm * comparablePricePerSqm);
+  const estimatedRevenueKrw = 0;
+  void comparablePricePerSqm;
+  void landPricePerSqm;
   const estimatedCostKrw = Math.round(
-    grossFloorAreaSqm * params.constructionCostPerSqm + areaSqm * landPricePerSqm * 1.22,
+    grossFloorAreaSqm * params.constructionCostPerSqm,
   );
-  const estimatedProfitRatePercent = estimatedCostKrw > 0
-    ? Number((((estimatedRevenueKrw - estimatedCostKrw) / estimatedCostKrw) * 100).toFixed(1))
-    : 0;
+  const estimatedProfitRatePercent = 0;
 
   return {
     id: 'custom',
     name: '세부설정',
     strategy: 'balanced',
-    buildingCoverageRatio: Number(params.coveragePercent.toFixed(1)),
-    floorAreaRatio: Number(params.farPercent.toFixed(1)),
+    buildingCoverageRatio: Number(
+      ((grossFloorAreaSqm / floorCount / areaSqm) * 100).toFixed(1),
+    ),
+    floorAreaRatio: Number(((grossFloorAreaSqm / areaSqm) * 100).toFixed(1)),
     grossFloorAreaSqm: Math.round(grossFloorAreaSqm),
     floors,
     estimatedRevenueKrw,
@@ -111,8 +120,14 @@ function SliderRow({
         className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-slate-700/60 accent-cyan-400 [&::-webkit-slider-thumb]:size-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-300"
       />
       <div className="flex justify-between text-[9px] text-slate-600">
-        <span>{min}{unit}</span>
-        <span>{max}{unit}</span>
+        <span>
+          {min}
+          {unit}
+        </span>
+        <span>
+          {max}
+          {unit}
+        </span>
       </div>
     </div>
   );
@@ -120,12 +135,14 @@ function SliderRow({
 
 function formatKrw(value: number) {
   if (value >= 100_000_000) return `${(value / 100_000_000).toFixed(1)}억`;
-  if (value >= 10_000) return `${Math.round(value / 10_000).toLocaleString('ko-KR')}만`;
+  if (value >= 10_000)
+    return `${Math.round(value / 10_000).toLocaleString('ko-KR')}만`;
   return `${value.toLocaleString('ko-KR')}`;
 }
 
 export function ScenarioCustomizer({
   areaSqm,
+  appliedScenario,
   maxCoverage,
   maxFar,
   comparablePricePerSqm,
@@ -134,7 +151,7 @@ export function ScenarioCustomizer({
 }: Props) {
   const defaultFloors = useMemo(() => {
     const footprint = areaSqm * (maxCoverage / 100);
-    const gross = areaSqm * (maxFar * 0.88 / 100);
+    const gross = areaSqm * ((maxFar * 0.88) / 100);
     return Math.max(1, Math.ceil(gross / footprint));
   }, [areaSqm, maxCoverage, maxFar]);
 
@@ -153,21 +170,33 @@ export function ScenarioCustomizer({
     return Math.max(1, Math.ceil((areaSqm * (maxFar / 100)) / footprint));
   }, [areaSqm, params.coveragePercent, maxFar]);
 
-  const update = useCallback((partial: Partial<CustomParams>) => {
-    setParams((prev) => {
-      const next = { ...prev, ...partial };
-      if ('coveragePercent' in partial || 'farPercent' in partial) {
-        const footprint = areaSqm * (next.coveragePercent / 100);
-        if (footprint > 0) {
-          next.floors = Math.max(1, Math.ceil((areaSqm * (next.farPercent / 100)) / footprint));
+  const update = useCallback(
+    (partial: Partial<CustomParams>) => {
+      setParams((prev) => {
+        const next = { ...prev, ...partial };
+        if ('coveragePercent' in partial || 'farPercent' in partial) {
+          const footprint = areaSqm * (next.coveragePercent / 100);
+          if (footprint > 0) {
+            next.floors = Math.max(
+              1,
+              Math.ceil((areaSqm * (next.farPercent / 100)) / footprint),
+            );
+          }
         }
-      }
-      return next;
-    });
-  }, [areaSqm]);
+        return next;
+      });
+    },
+    [areaSqm],
+  );
 
   const scenario = useMemo(
-    () => buildCustomScenario(areaSqm, params, comparablePricePerSqm, landPricePerSqm),
+    () =>
+      buildCustomScenario(
+        areaSqm,
+        params,
+        comparablePricePerSqm,
+        landPricePerSqm,
+      ),
     [areaSqm, params, comparablePricePerSqm, landPricePerSqm],
   );
 
@@ -175,15 +204,18 @@ export function ScenarioCustomizer({
     onScenarioChange(scenario);
   }, [scenario, onScenarioChange]);
 
-  const totalHeight = scenario.floors.reduce((s, f) => s + f.heightM, 0);
+  const displayScenario = appliedScenario ?? scenario;
+  const totalHeight = displayScenario.floors.reduce((s, f) => s + f.heightM, 0);
 
   return (
-    <div className="space-y-4 rounded-xl border border-cyan-300/15 bg-slate-900/60 p-4">
+    <div className="space-y-4 rounded-xl border border-cyan-300/15 scenario-customizer bg-slate-900/60 p-4">
       <div className="flex items-center gap-2">
         <Settings2 className="size-4 text-cyan-300" />
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">세부설정</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+          세부설정
+        </h3>
         <span className="ml-auto rounded bg-cyan-300/10 px-1.5 py-0.5 text-[9px] text-cyan-300">
-          법적 상한: 건폐 {maxCoverage}% · 용적 {maxFar}%
+          검토 가정: 건폐 {maxCoverage}% · 용적 {maxFar}%
         </span>
       </div>
 
@@ -254,30 +286,45 @@ export function ScenarioCustomizer({
       <div className="space-y-2 rounded-lg border border-white/8 bg-black/20 p-3">
         <div className="flex items-center justify-between text-xs">
           <span className="text-slate-500">예상 연면적</span>
-          <span className="font-medium text-slate-200">{scenario.grossFloorAreaSqm.toLocaleString('ko-KR')}㎡</span>
+          <span className="font-medium text-slate-200">
+            {displayScenario.grossFloorAreaSqm.toLocaleString('ko-KR')}㎡
+          </span>
         </div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-slate-500">건물 높이</span>
-          <span className="font-medium text-slate-200">{totalHeight.toFixed(1)}m ({params.floors}층)</span>
+          <span className="font-medium text-slate-200">
+            {totalHeight.toFixed(1)}m ({params.floors}층)
+          </span>
         </div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-slate-500">예상 매출</span>
-          <span className="font-medium text-slate-200">{formatKrw(scenario.estimatedRevenueKrw)}원</span>
+          <span className="font-medium text-slate-200">
+            {displayScenario.estimatedRevenueKrw > 0
+              ? formatKrw(displayScenario.estimatedRevenueKrw) + '원'
+              : '미산정'}
+          </span>
         </div>
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500">예상 총사업비</span>
-          <span className="font-medium text-slate-200">{formatKrw(scenario.estimatedCostKrw)}원</span>
+          <span className="text-slate-500">개략 공사비</span>
+          <span className="font-medium text-slate-200">
+            {formatKrw(displayScenario.estimatedCostKrw)}원
+          </span>
         </div>
         <div className="flex items-center justify-between border-t border-white/8 pt-2 text-xs">
           <span className="text-slate-400">개략 수익률</span>
-          <span className={`text-base font-semibold ${scenario.estimatedProfitRatePercent >= 0 ? 'text-lime-200' : 'text-rose-300'}`}>
-            {scenario.estimatedProfitRatePercent}%
+          <span
+            className={`text-base font-semibold ${displayScenario.estimatedProfitRatePercent >= 0 ? 'text-lime-200' : 'text-rose-300'}`}
+          >
+            {displayScenario.estimatedRevenueKrw > 0
+              ? `${displayScenario.estimatedProfitRatePercent}%`
+              : '미산정'}
           </span>
         </div>
       </div>
 
       <p className="text-[9px] text-slate-600">
-        법적 상한 이내에서 자유롭게 조정 가능합니다. 수익률은 개략 추정치입니다.
+        조정값은 법정 한도가 아닙니다. 규제·주차·이격은 별도 검증해야 하며
+        매출/수익률은 수익 모델 입력 전 미산정입니다.
       </p>
     </div>
   );

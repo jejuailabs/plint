@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import random
 import sys
 from pathlib import Path
 
@@ -27,10 +26,20 @@ area_sqm = float(payload["parcel"]["areaSqm"])
 scenario = payload["scenario"]
 floors = max(1, int(scenario["floors"]))
 coverage = min(100.0, max(1.0, float(scenario["buildingCoveragePercent"]))) / 100.0
-floor_height = 3.35
+placement = scenario["placement"]
+floor_heights = scenario["floorHeights"]
+floor_areas = scenario["floorAreasSqm"]
 parcel_side = max(20.0, math.sqrt(area_sqm))
-building_footprint = max(8.0, math.sqrt(area_sqm * coverage))
-building_height = floors * floor_height
+width = placement["widthM"]
+depth = placement["depthM"]
+rotation = placement["rotationRad"]
+center = placement["center"]
+building_height = sum(floor_heights)
+
+
+def local(point):
+    return ((point["longitude"] - center["longitude"]) * 111320 * math.cos(math.radians(center["latitude"])),
+            (point["latitude"] - center["latitude"]) * 111320)
 
 
 def make_material(name: str, color: tuple[float, float, float, float], metallic: float = 0.0, roughness: float = 0.5):
@@ -61,36 +70,48 @@ def cube(name: str, location: tuple[float, float, float], scale: tuple[float, fl
     return obj
 
 
-cube("Urban context", (0, 0, -0.4), (parcel_side * 3.5, parcel_side * 3.5, 0.8), ground_mat)
-cube("Main road", (0, -parcel_side * 0.92, 0.02), (parcel_side * 3.5, parcel_side * 0.28, 0.08), road_mat)
-cube("Cross road", (parcel_side * 0.96, 0, 0.02), (parcel_side * 0.25, parcel_side * 3.5, 0.08), road_mat)
-cube("Selected parcel", (0, 0, 0.08), (parcel_side, parcel_side, 0.13), edge_mat)
-cube("Development podium", (0, 0, 0.25), (building_footprint + 2.2, building_footprint + 2.2, 0.35), road_mat)
+# Ground is a neutral render surface, not fabricated streets or terrain.
+cube("Neutral reference ground", (0, 0, -0.4), (parcel_side * 10, parcel_side * 10, 0.8), ground_mat)
 
-# Separate floors let the browser report and R3F viewer highlight each level.
-for floor in range(floors):
-    taper = 1.0 - min(floor * 0.012, 0.17)
-    side = building_footprint * taper
-    cube(
-        f"Proposed mass floor {floor + 1}",
-        (0, 0, 0.5 + floor * floor_height),
-        (side, side, floor_height - 0.12),
-        mass_mat,
-    )
+# Trace the supplied parcel, without substituting a square.
+ring = payload["parcel"]["boundary"]
+curve = bpy.data.curves.new("Actual parcel boundary", "CURVE")
+curve.dimensions = "3D"
+curve.bevel_depth = 0.08
+poly = curve.splines.new("POLY")
+poly.points.add(len(ring) - 1)
+for point, geo in zip(poly.points, ring):
+    x, y = local(geo)
+    point.co = (x, y, 0.12, 1)
+poly.use_cyclic_u = True
+outline = bpy.data.objects.new("Actual parcel boundary", curve)
+bpy.context.collection.objects.link(outline)
+outline.data.materials.append(edge_mat)
 
-# Stable urban context, so the same analysis always renders the same scene.
-rng = random.Random(payload["analysisId"])
-for index in range(18):
-    angle = (math.tau / 18) * index + rng.uniform(-0.11, 0.11)
-    distance = parcel_side * rng.uniform(1.12, 1.7)
-    side = rng.uniform(parcel_side * 0.18, parcel_side * 0.35)
-    height = rng.uniform(floor_height * 2, floor_height * 10)
-    cube(
-        f"Context block {index + 1}",
-        (math.cos(angle) * distance, math.sin(angle) * distance, height / 2),
-        (side, side * rng.uniform(0.72, 1.28), height),
-        context_mat,
-    )
+z = 0.0
+for floor, (height, floor_area) in enumerate(zip(floor_heights, floor_areas)):
+    scale = math.sqrt(floor_area / (width * depth))
+    obj = cube(f"Proposed mass floor {floor + 1}", (0, 0, z + height / 2), (width * scale, depth * scale, height), mass_mat)
+    obj.rotation_euler.z = rotation
+    z += height
+
+# Extrude only supplied actual footprints. No random city blocks or invented roads.
+for index, building in enumerate(payload.get("context", [])):
+    coords = building["footprint"]
+    if coords[0] == coords[-1]:
+        coords = coords[:-1]
+    height = building["heightM"]
+    xy = [local(point) for point in coords]
+    n = len(xy)
+    vertices = [(x, y, 0) for x, y in xy] + [(x, y, height) for x, y in xy]
+    faces = [tuple(range(n-1, -1, -1)), tuple(range(n, 2*n))]
+    faces += [(i, (i+1)%n, (i+1)%n+n, i+n) for i in range(n)]
+    mesh = bpy.data.meshes.new(f"Actual context {index}")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(f"Actual context {index} (height may be estimated)", mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.data.materials.append(context_mat)
 
 bpy.ops.object.light_add(type="AREA", location=(parcel_side * 1.2, -parcel_side * 1.3, building_height * 2.3))
 key_light = bpy.context.object
@@ -138,7 +159,7 @@ bpy.ops.export_scene.gltf(
     json.dumps(
         {
             "floors": floors,
-            "grossFloorAreaSqm": round(area_sqm * coverage * floors, 1),
+            "grossFloorAreaSqm": round(sum(floor_areas), 1),
             "renderWidth": 1280,
             "renderHeight": 800,
         }

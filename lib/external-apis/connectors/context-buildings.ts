@@ -2,7 +2,7 @@
  * VWorld WFS 건물통합 — 대상 필지 주변 건물 폴리곤·높이를 조회한다.
  *
  * Endpoint: https://api.vworld.kr/req/wfs
- * TypeName: lt_c_spbdbuilding (건물통합정보마스터)
+ * TypeName: lt_c_spbd (건물통합정보마스터)
  * Env:      VWORLD_API_KEY
  */
 
@@ -14,6 +14,7 @@ export type ContextBuildingsInput = {
   centerLat: number;
   centerLon: number;
   radiusM?: number;
+  targetPnu?: string;
 };
 
 export type ContextBuildingItem = {
@@ -42,7 +43,10 @@ type WfsResponse = {
 const CONNECTOR_ID = 'gis-building';
 const DEG_PER_M = 1 / 111_320;
 
-export function createContextBuildingsConnector(): Connector<ContextBuildingsInput, ContextBuildingsOutput> {
+export function createContextBuildingsConnector(): Connector<
+  ContextBuildingsInput,
+  ContextBuildingsOutput
+> {
   const manifest = getConnectorManifest(CONNECTOR_ID);
   if (!manifest) throw new Error(`Manifest not found: ${CONNECTOR_ID}`);
 
@@ -55,7 +59,8 @@ export function createContextBuildingsConnector(): Connector<ContextBuildingsInp
 
       const radius = input.radiusM ?? 150;
       const dLat = radius * DEG_PER_M;
-      const dLon = radius * DEG_PER_M / Math.cos((input.centerLat * Math.PI) / 180);
+      const dLon =
+        (radius * DEG_PER_M) / Math.cos((input.centerLat * Math.PI) / 180);
 
       const bbox = [
         input.centerLon - dLon,
@@ -66,10 +71,10 @@ export function createContextBuildingsConnector(): Connector<ContextBuildingsInp
 
       const url = new URL('https://api.vworld.kr/req/wfs');
       url.searchParams.set('service', 'WFS');
-      url.searchParams.set('version', '2.0.0');
+      url.searchParams.set('version', '1.1.0');
       url.searchParams.set('request', 'GetFeature');
-      url.searchParams.set('typeName', 'lt_c_spbdbuilding');
-      url.searchParams.set('crs', 'EPSG:4326');
+      url.searchParams.set('typeName', 'lt_c_spbd');
+      url.searchParams.set('srsName', 'EPSG:4326');
       url.searchParams.set('output', 'application/json');
       url.searchParams.set('bbox', bbox);
       url.searchParams.set('maxFeatures', '80');
@@ -85,12 +90,21 @@ export function createContextBuildingsConnector(): Connector<ContextBuildingsInp
         });
 
         if (raw.response?.status === 'ERROR') {
-          return emptyResult(raw.response.error?.text ?? 'VWorld WFS building error');
+          return emptyResult(
+            raw.response.error?.text ?? 'VWorld WFS building error',
+          );
         }
 
         const features = raw.features ?? [];
         if (features.length === 0) {
-          return emptyResult('No buildings found in this area');
+          return {
+            data: [],
+            rawSnapshotId: `ctx-empty-${Date.now()}`,
+            observedAt: new Date().toISOString(),
+            warnings: [
+              '조회 범위 내 등록 건물 0건 · 현장에 건물이 없다는 확정은 아님',
+            ],
+          };
         }
 
         const buildings: ContextBuildingItem[] = [];
@@ -109,16 +123,23 @@ export function createContextBuildingsConnector(): Connector<ContextBuildingsInp
           }
 
           const props = feat.properties ?? {};
-          const floors = parseNum(props.grnd_flr_co) ?? parseNum(props.gro_flo_co);
+          if (input.targetPnu && props.pnu === input.targetPnu) continue;
+          const floors =
+            parseNum(props.grnd_flr_co) ?? parseNum(props.gro_flo_co);
           const height = parseNum(props.height) ?? (floors ? floors * 3.2 : 9);
-          const id = String(props.buld_se_cd ?? props.bd_mgt_sn ?? `bldg-${buildings.length}`);
+          const id =
+            typeof props.bd_mgt_sn === 'string'
+              ? props.bd_mgt_sn
+              : `bldg-${buildings.length}`;
 
           buildings.push({
             id,
             footprint: coords,
             heightM: height,
             floorsAbove: floors,
-            use: (props.bdtyp_cd_nm ?? props.main_purps_cd_nm ?? null) as string | null,
+            use: (props.bdtyp_cd_nm ?? props.main_purps_cd_nm ?? null) as
+              | string
+              | null,
           });
         }
 
@@ -126,10 +147,14 @@ export function createContextBuildingsConnector(): Connector<ContextBuildingsInp
           data: buildings,
           rawSnapshotId: `ctx-bldg-${Date.now()}`,
           observedAt: new Date().toISOString(),
-          warnings: [],
+          warnings:
+            features.length >= 80
+              ? ['최대 80건 조회 · 주변 건물 일부가 누락될 수 있습니다.']
+              : ['높이 미제공 건물은 층수×3.2m 또는 9m 추정'],
         };
       } catch (error) {
-        const message = error instanceof HttpError ? error.message : String(error);
+        const message =
+          error instanceof HttpError ? error.message : String(error);
         console.error(`[${CONNECTOR_ID}] ${message}`);
         return emptyResult(message);
       }

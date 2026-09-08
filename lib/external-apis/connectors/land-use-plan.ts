@@ -18,6 +18,7 @@ export type LandUsePlanInput = {
 export type LandUseZone = {
   code: string;
   name: string;
+  relation?: string;
   category: 'zoning' | 'district' | 'area' | 'other';
 };
 
@@ -30,6 +31,7 @@ type LadfrlItem = {
   prposAreaDstrcCode?: string;
   prposAreaDstrcCodeNm?: string;
   cnflcAt?: string;
+  cnflcAtNm?: string;
 };
 
 type VWorldNedResponse = {
@@ -48,8 +50,8 @@ type VWorldNedResponse = {
 
 const CONNECTOR_ID = 'land-use-plan';
 
-const ZONING_PREFIXES = ['UQ', 'UC', 'UG', 'UR'];
-const DISTRICT_PREFIXES = ['UD'];
+const ZONING_PREFIXES = ['UQA'];
+const DISTRICT_PREFIXES = ['UQ', 'UD', 'UG', 'UB', 'UM'];
 
 function categorize(code: string): LandUseZone['category'] {
   if (ZONING_PREFIXES.some((p) => code.startsWith(p))) return 'zoning';
@@ -58,7 +60,10 @@ function categorize(code: string): LandUseZone['category'] {
   return 'other';
 }
 
-export function createLandUsePlanConnector(): Connector<LandUsePlanInput, LandUsePlanOutput> {
+export function createLandUsePlanConnector(): Connector<
+  LandUsePlanInput,
+  LandUsePlanOutput
+> {
   const manifest = getConnectorManifest(CONNECTOR_ID);
   if (!manifest) throw new Error(`Manifest not found: ${CONNECTOR_ID}`);
 
@@ -87,7 +92,10 @@ export function createLandUsePlanConnector(): Connector<LandUsePlanInput, LandUs
 
         const result = raw.landUses;
         if (!result?.field) {
-          const msg = result?.resultMsg || raw.response?.resultMsg || 'No land use plan data found';
+          const msg =
+            result?.resultMsg ||
+            raw.response?.resultMsg ||
+            'No land use plan data found';
           return emptyResult(msg);
         }
 
@@ -95,11 +103,14 @@ export function createLandUsePlanConnector(): Connector<LandUsePlanInput, LandUs
         const list = Array.isArray(rawItems) ? rawItems : [rawItems];
 
         const zones: LandUseZone[] = list
-          .filter((item) => item.prposAreaDstrcCode && item.prposAreaDstrcCodeNm)
+          .filter(
+            (item) => item.prposAreaDstrcCode && item.prposAreaDstrcCodeNm,
+          )
           .map((item) => ({
             code: item.prposAreaDstrcCode!,
             name: item.prposAreaDstrcCodeNm!,
             category: categorize(item.prposAreaDstrcCode!),
+            relation: item.cnflcAtNm ?? '관계 미확인',
           }));
 
         const primaryZone = zones.find((z) => z.category === 'zoning') ?? null;
@@ -111,7 +122,8 @@ export function createLandUsePlanConnector(): Connector<LandUsePlanInput, LandUs
           warnings: [],
         };
       } catch (error) {
-        const message = error instanceof HttpError ? error.message : String(error);
+        const message =
+          error instanceof HttpError ? error.message : String(error);
         console.error(`[${CONNECTOR_ID}] ${message}`);
         return emptyResult(message);
       }

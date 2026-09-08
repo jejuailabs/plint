@@ -5,7 +5,13 @@
  * AbortSignal support, and typed error categorisation.
  */
 
-export type HttpErrorCategory = 'timeout' | 'quota' | 'network' | 'parse' | 'server' | 'unknown';
+export type HttpErrorCategory =
+  | 'timeout'
+  | 'quota'
+  | 'network'
+  | 'parse'
+  | 'server'
+  | 'unknown';
 
 export class HttpError extends Error {
   constructor(
@@ -58,6 +64,14 @@ export async function fetchWithRetry<T>(
     try {
       const response = await fetch(url, { signal: combinedSignal });
       clearTimeout(timerId);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new HttpError(
+          '서비스 키 인증 또는 활용승인 확인 필요',
+          'quota',
+          response.status,
+        );
+      }
 
       if (response.status === 429) {
         throw new HttpError('API quota exceeded (HTTP 429)', 'quota', 429);
@@ -147,10 +161,14 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
       return;
     }
     const id = setTimeout(resolve, ms);
-    signal?.addEventListener('abort', () => {
-      clearTimeout(id);
-      resolve();
-    }, { once: true });
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(id);
+        resolve();
+      },
+      { once: true },
+    );
   });
 }
 

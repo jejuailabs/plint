@@ -51,7 +51,10 @@ type VWorldNedResponse = {
 
 const CONNECTOR_ID = 'land-characteristics';
 
-export function createLandPriceConnector(): Connector<LandPriceInput, LandPriceOutput> {
+export function createLandPriceConnector(): Connector<
+  LandPriceInput,
+  LandPriceOutput
+> {
   const manifest = getConnectorManifest(CONNECTOR_ID);
   if (!manifest) throw new Error(`Manifest not found: ${CONNECTOR_ID}`);
 
@@ -64,15 +67,17 @@ export function createLandPriceConnector(): Connector<LandPriceInput, LandPriceO
         return emptyResult('VWORLD_API_KEY is not configured');
       }
 
-      const url = new URL('https://api.vworld.kr/ned/data/getIndvdLandPriceAttr');
+      const url = new URL(
+        'https://api.vworld.kr/ned/data/getIndvdLandPriceAttr',
+      );
       url.searchParams.set('key', apiKey);
       if (process.env.VWORLD_DOMAIN) {
         url.searchParams.set('domain', process.env.VWORLD_DOMAIN);
       }
       url.searchParams.set('pnu', input.pnuCode);
-      url.searchParams.set('stdrYear', String(new Date().getFullYear() - 1));
+
       url.searchParams.set('format', 'json');
-      url.searchParams.set('numOfRows', '1');
+      url.searchParams.set('numOfRows', '100');
       url.searchParams.set('pageNo', '1');
 
       try {
@@ -83,22 +88,34 @@ export function createLandPriceConnector(): Connector<LandPriceInput, LandPriceO
 
         const result = raw.indvdLandPrices;
         if (!result?.field) {
-          const msg = result?.resultMsg || raw.response?.resultMsg || 'No land price data found for PNU';
+          const msg =
+            result?.resultMsg ||
+            raw.response?.resultMsg ||
+            'No land price data found for PNU';
           return emptyResult(msg);
         }
 
         const items = result.field;
-        const item: LandPriceItem | undefined = Array.isArray(items) ? items[0] : items;
+        const item: LandPriceItem | undefined = Array.isArray(items)
+          ? [...items].sort(
+              (a, b) => Number(b.stdrYear ?? 0) - Number(a.stdrYear ?? 0),
+            )[0]
+          : items;
 
         if (!item || item.pblntfPclnd == null) {
           return emptyResult('No land price data found for PNU');
         }
 
-        const price = typeof item.pblntfPclnd === 'string'
-          ? parseInt(item.pblntfPclnd, 10)
-          : item.pblntfPclnd;
-        const year = item.stdrYear ? parseInt(item.stdrYear, 10) : new Date().getFullYear() - 1;
+        const price =
+          typeof item.pblntfPclnd === 'string'
+            ? parseInt(item.pblntfPclnd, 10)
+            : item.pblntfPclnd;
+        const year = item.stdrYear
+          ? parseInt(item.stdrYear, 10)
+          : new Date().getFullYear() - 1;
 
+        if (!Number.isFinite(price) || price <= 0)
+          return emptyResult('유효한 공시지가가 없습니다.');
         return {
           data: {
             officialPricePerSqm: price,
@@ -111,7 +128,8 @@ export function createLandPriceConnector(): Connector<LandPriceInput, LandPriceO
           warnings: [],
         };
       } catch (error) {
-        const message = error instanceof HttpError ? error.message : String(error);
+        const message =
+          error instanceof HttpError ? error.message : String(error);
         console.error(`[${CONNECTOR_ID}] ${message}`);
         return emptyResult(message);
       }

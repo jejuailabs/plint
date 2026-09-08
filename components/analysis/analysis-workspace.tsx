@@ -29,9 +29,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AddressSearch, type AddressResult } from '@/components/address-search';
+import { AnalysisProgressView } from '@/components/analysis/analysis-progress';
+import {
+  readAnalysisStream,
+  type AnalysisProgress,
+  type StepId,
+} from '@/lib/pipeline/progress';
 import { LazyAnalysisScene } from '@/components/analysis/lazy-analysis-scene';
 import { LazyCesiumContext } from '@/components/analysis/lazy-cesium-context';
 import { ScenarioCustomizer } from '@/components/analysis/scenario-customizer';
@@ -39,6 +45,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/theme-toggle';
+import Image from 'next/image';
+import { placeMassing } from '@/lib/pipeline/massing';
 import type {
   AnalysisPreviewResponse,
   DevelopmentScenario,
@@ -98,15 +106,25 @@ export function AnalysisWorkspace() {
   const [message, setMessage] = useState('');
   const [zoom, setZoom] = useState(100);
   const [sceneMode, setSceneMode] = useState<'massing' | 'context'>('massing');
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [exportStatus, setExportStatus] = useState<'idle' | 'submitting' | 'submitted' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<
+    'idle' | 'saving' | 'saved' | 'error'
+  >('idle');
+  const [exportStatus, setExportStatus] = useState<
+    'idle' | 'submitting' | 'submitted' | 'error'
+  >('idle');
   const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
   const [sunlight, setSunlight] = useState<SunlightData | null>(null);
-  const [sunlightStatus, setSunlightStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [sunlightStatus, setSunlightStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'error'
+  >('idle');
   const [showReportConfirm, setShowReportConfirm] = useState(false);
+  const [blenderMessage, setBlenderMessage] = useState('');
+  const blenderPoll = useRef(0);
+  const [blenderJobId, setBlenderJobId] = useState<string | null>(null);
   const [blenderPreview, setBlenderPreview] = useState<string | null>(null);
   const [blenderGlb, setBlenderGlb] = useState<string | null>(null);
-  const [customScenario, setCustomScenario] = useState<DevelopmentScenario | null>(null);
+  const [customScenario, setCustomScenario] =
+    useState<DevelopmentScenario | null>(null);
 
   const setWorkspaceZoom = useCallback((nextZoom: number) => {
     setZoom(Math.min(140, Math.max(80, nextZoom)));
@@ -125,141 +143,227 @@ export function AnalysisWorkspace() {
     return () => window.removeEventListener('wheel', handleWheel);
   }, []);
 
-  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState<
+    Partial<Record<StepId, AnalysisProgress>>
+  >({});
+  const analysisRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => analysisRequest.current?.abort(), []);
 
-  const analyze = useCallback(async (nextAddress: string, forceRefresh = false) => {
-    if (!forceRefresh) {
-      try {
-        const lookupRes = await fetch(`/api/analysis/lookup?address=${encodeURIComponent(nextAddress)}`);
-        if (lookupRes.ok) {
-          const lookupBody = await lookupRes.json();
-          const saved = lookupBody?.data;
-          if (saved?.result) {
-            const restored: AnalysisPreviewResponse = {
-              data: saved.result as AnalysisPreviewResponse['data'],
-              meta: { requestId: saved.analysisId, generatedAt: saved.completedAt ?? new Date().toISOString(), mode: 'hybrid' as const, durationMs: 0 },
-            };
-            setResult(restored);
-            setScenarioId('balanced');
-            setSavedAnalysisId(saved.analysisId);
-            setSaveStatus('saved');
-            setStatus('ready');
-            const center = restored.data.identity.center.value;
-            if (center) {
-              setSunlightStatus('loading');
-              fetch('/api/analysis/sunlight', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ latitude: center.latitude, longitude: center.longitude }),
-              })
-                .then((r) => r.ok ? r.json() : Promise.reject())
-                .then((d) => { setSunlight(d as SunlightData); setSunlightStatus('ready'); })
-                .catch(() => setSunlightStatus('error'));
+  const analyze = useCallback(
+    async (nextAddress: string, forceRefresh = false) => {
+      analysisRequest.current?.abort();
+      const controller = new AbortController();
+      analysisRequest.current = controller;
+      const signal = controller.signal;
+      setProgress({});
+      setResult(null);
+      blenderPoll.current++;
+      setBlenderJobId(null);
+      setStatus('loading');
+      setMessage(
+        forceRefresh ? '분석 요청 중...' : '저장된 분석을 확인하고 있습니다...',
+      );
+      if (!forceRefresh) {
+        try {
+          const lookupRes = await fetch(
+            `/api/analysis/lookup?address=${encodeURIComponent(nextAddress)}`,
+            { signal },
+          );
+          if (lookupRes.ok) {
+            const lookupBody = await lookupRes.json();
+            if (signal.aborted) return;
+            const saved = lookupBody?.data;
+            if (saved?.result?.pipelineVersion === 2) {
+              const restored: AnalysisPreviewResponse = {
+                data: saved.result as AnalysisPreviewResponse['data'],
+                meta: {
+                  requestId: saved.analysisId,
+                  generatedAt: saved.completedAt ?? new Date().toISOString(),
+                  mode: 'hybrid' as const,
+                  durationMs: 0,
+                },
+              };
+              setResult(restored);
+              setScenarioId('balanced');
+              setSavedAnalysisId(saved.analysisId);
+              setSaveStatus('saved');
+              setStatus('ready');
+              const center = restored.data.identity.center.value;
+              if (center) {
+                setSunlightStatus('loading');
+                fetch('/api/analysis/sunlight', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    latitude: center.latitude,
+                    longitude: center.longitude,
+                  }),
+                })
+                  .then((r) => (r.ok ? r.json() : Promise.reject()))
+                  .then((d) => {
+                    setSunlight(d as SunlightData);
+                    setSunlightStatus('ready');
+                  })
+                  .catch(() => setSunlightStatus('error'));
+              }
+              return;
             }
-            return;
           }
+        } catch {
+          /* lookup failed, proceed with fresh analysis */
         }
-      } catch { /* lookup failed, proceed with fresh analysis */ }
-    }
+      }
 
-    setSaveStatus('idle');
-    setSavedAnalysisId(null);
-    setSunlight(null);
-    setSunlightStatus('idle');
-    setBlenderPreview(null);
-    setBlenderGlb(null);
-    setExportStatus('idle');
-    setStatus('loading');
-    setLoadingStep(0);
-    setMessage('주소를 해석하고 있습니다...');
+      if (signal.aborted) return;
+      setSaveStatus('idle');
+      setSavedAnalysisId(null);
+      setSunlight(null);
+      setSunlightStatus('idle');
+      setBlenderPreview(null);
+      setBlenderGlb(null);
+      setExportStatus('idle');
+      setStatus('loading');
+      setMessage('실제 자료를 조회하고 있습니다...');
 
-    const steps = [
-      { msg: '주소 → PNU 코드 변환 중...', delay: 800 },
-      { msg: '건축물대장 조회 중...', delay: 1200 },
-      { msg: '공시지가 · 실거래가 수집 중...', delay: 1800 },
-      { msg: '토지이용계획 분석 중...', delay: 2400 },
-      { msg: '기상 · 일조 데이터 연결 중...', delay: 3000 },
-      { msg: '개발 시나리오 산출 중...', delay: 3800 },
-    ];
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let i = 0; i < steps.length; i++) {
-      timers.push(setTimeout(() => {
-        setLoadingStep(i + 1);
-        setMessage(steps[i].msg);
-      }, steps[i].delay));
-    }
+      try {
+        const response = await fetch('/api/analysis/preview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/x-ndjson',
+          },
+          body: JSON.stringify({ address: nextAddress }),
+          signal,
+        });
+        const payload = await readAnalysisStream(response, (event) => {
+          if (signal.aborted) return;
+          setProgress((current) => ({ ...current, [event.step]: event }));
+          if (event.step === 'scenarios' && event.status === 'running')
+            setMessage(event.message);
+          else if (event.step === 'address' && event.status === 'running')
+            setMessage('주소를 해석하고 있습니다...');
+          else if (event.step === 'address' && event.status === 'completed')
+            setMessage('실제 자료를 조회하고 있습니다...');
+        });
+        if (signal.aborted) return;
+        setResult(payload);
+        setScenarioId('balanced');
+        setStatus('ready');
 
-    try {
-      const response = await fetch('/api/analysis/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: nextAddress }),
-      });
-      const payload = (await response.json()) as AnalysisPreviewResponse & {
-        error?: { message?: string };
-      };
-      if (!response.ok)
-        throw new Error(
-          payload.error?.message ?? '분석을 완료하지 못했습니다.',
-        );
-      timers.forEach(clearTimeout);
-      setResult(payload);
-      setScenarioId('balanced');
-      setStatus('ready');
-
-      // Auto-save to Supabase (silently fails if not logged in)
-      fetch('/api/analysis/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: nextAddress, result: payload.data, coverage: payload.data.coverage }),
-      })
-        .then((r) => r.ok ? r.json() : null)
-        .then((body) => { if (body?.data?.analysisId) { setSavedAnalysisId(body.data.analysisId); setSaveStatus('saved'); } })
-        .catch(() => {});
-
-      const center = payload.data.identity.center.value;
-      if (center) {
-        setSunlightStatus('loading');
-        fetch('/api/analysis/sunlight', {
+        // Auto-save to Supabase (silently fails if not logged in)
+        fetch('/api/analysis/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude: center.latitude, longitude: center.longitude }),
+          body: JSON.stringify({
+            address: nextAddress,
+            result: payload.data,
+            coverage: payload.data.coverage,
+          }),
         })
-          .then((r) => r.ok ? r.json() : Promise.reject())
-          .then((data) => { setSunlight(data as SunlightData); setSunlightStatus('ready'); })
-          .catch(() => setSunlightStatus('error'));
+          .then((r) => (r.ok ? r.json() : null))
+          .then((body) => {
+            if (body?.data?.analysisId) {
+              setSavedAnalysisId(body.data.analysisId);
+              setSaveStatus('saved');
+            }
+          })
+          .catch(() => {});
+
+        const center = payload.data.identity.center.value;
+        if (center) {
+          setSunlightStatus('loading');
+          fetch('/api/analysis/sunlight', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              latitude: center.latitude,
+              longitude: center.longitude,
+            }),
+          })
+            .then((r) => (r.ok ? r.json() : Promise.reject()))
+            .then((data) => {
+              setSunlight(data as SunlightData);
+              setSunlightStatus('ready');
+            })
+            .catch(() => setSunlightStatus('error'));
+        }
+      } catch (error) {
+        if (signal.aborted) return;
+        setProgress((current) =>
+          Object.fromEntries(
+            Object.entries(current).map(([key, step]) => [
+              key,
+              step.status === 'running'
+                ? {
+                    ...step,
+                    status: 'failed',
+                    message: '분석 중단 · 다시 시도해 주세요.',
+                  }
+                : step,
+            ]),
+          ),
+        );
+        setStatus('error');
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : '분석을 완료하지 못했습니다.',
+        );
       }
-    } catch (error) {
-      timers.forEach(clearTimeout);
-      setStatus('error');
-      setMessage(
-        error instanceof Error ? error.message : '분석을 완료하지 못했습니다.',
-      );
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     const initial =
       new URLSearchParams(window.location.search).get('address')?.trim() || '';
     if (initial) {
-      setAddress(initial);
-      setQuery(initial);
-      void analyze(initial);
+      const timer = window.setTimeout(() => {
+        setAddress(initial);
+        setQuery(initial);
+        void analyze(initial);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [analyze]);
 
-  const scenario = useMemo(
+  const baseScenario = useMemo(
     () =>
       scenarioId === 'custom' && customScenario
         ? customScenario
-        : result?.data.scenarios.find((item) => item.id === scenarioId) ??
-          result?.data.scenarios[0],
+        : (result?.data.scenarios.find((item) => item.id === scenarioId) ??
+          result?.data.scenarios[0]),
     [result, scenarioId, customScenario],
   );
 
+  const scenario = useMemo(() => {
+    if (!baseScenario || baseScenario.id !== 'custom' || !result)
+      return baseScenario;
+    const area = result.data.geometry.areaSqm.value ?? 0;
+    const massing = placeMassing(
+      result.data.geometry.boundary.value,
+      area,
+      baseScenario,
+    );
+    if (!massing) return baseScenario;
+    const gross = Math.round(massing.floorAreasSqm.reduce((a, b) => a + b, 0));
+    const unit =
+      baseScenario.estimatedCostKrw /
+      Math.max(1, baseScenario.grossFloorAreaSqm);
+    return {
+      ...baseScenario,
+      massing,
+      grossFloorAreaSqm: gross,
+      floorAreaRatio: Math.round((gross / area) * 1000) / 10,
+      buildingCoverageRatio:
+        Math.round(((massing.widthM * massing.depthM) / area) * 1000) / 10,
+      estimatedCostKrw: Math.round(gross * unit),
+    };
+  }, [baseScenario, result]);
+
   const legalLimits = useMemo(() => {
     if (!result) return { maxCoverage: 60, maxFar: 200 };
-    const maxYield = result.data.scenarios.find((s) => s.id === 'max_yield');
+    const maxYield = result.data.scenarios.find((s) => s.id === 'yield');
     return {
       maxCoverage: maxYield?.buildingCoverageRatio ?? 60,
       maxFar: maxYield?.floorAreaRatio ?? 200,
@@ -290,35 +394,109 @@ export function AnalysisWorkspace() {
     }
   }, [result, address, saveStatus]);
 
+  useEffect(
+    () => () => {
+      blenderPoll.current++;
+    },
+    [],
+  );
+
   const pollBlenderJob = useCallback(async (jobId: string) => {
-    const maxAttempts = 60;
+    setExportStatus('submitted');
+    const generation = ++blenderPoll.current;
+    const maxAttempts = 90;
+    setBlenderMessage('GPU 작업 상태 확인 중…');
     for (let i = 0; i < maxAttempts; i++) {
+      if (generation !== blenderPoll.current) return;
       await new Promise((r) => setTimeout(r, 4000));
       try {
-        const res = await fetch(`/api/modeling/runpod/${encodeURIComponent(jobId)}`);
-        if (!res.ok) continue;
-        const job = await res.json();
-        if (job.status === 'COMPLETED' && job.output) {
+        const res = await fetch(
+          `/api/modeling/runpod/${encodeURIComponent(jobId)}`,
+          { signal: AbortSignal.timeout(20000) },
+        );
+        if (generation !== blenderPoll.current) return;
+        const payload = await res.json();
+        if (!res.ok)
+          throw new Error(payload.error?.message ?? '작업 상태 조회 실패');
+        const job = payload.data;
+        if (!job?.status) throw new Error('GPU 작업 응답 형식 오류');
+        setBlenderMessage(
+          job.status === 'IN_QUEUE'
+            ? 'GPU 할당 대기 중'
+            : job.status === 'IN_PROGRESS'
+              ? 'Blender 모델링·렌더링 중'
+              : job.status,
+        );
+        if (job.status === 'COMPLETED') {
+          if (job.output?.formatVersion !== 'plint-blender-v3') {
+            setBlenderJobId(null);
+            throw new Error(
+              'GPU 워커 업데이트가 필요합니다. 이전 워커는 임의 주변 건물을 생성하므로 결과를 표시하지 않습니다.',
+            );
+          }
+          if (!job.output?.preview?.base64 || !job.output?.model?.base64)
+            throw new Error(
+              '작업 완료 응답에 모델 또는 렌더 이미지가 없습니다.',
+            );
           if (job.output.preview?.base64) {
-            setBlenderPreview(`data:image/png;base64,${job.output.preview.base64}`);
+            setBlenderPreview(
+              `data:image/png;base64,${job.output.preview.base64}`,
+            );
           }
           if (job.output.model?.base64) {
-            setBlenderGlb(`data:model/gltf-binary;base64,${job.output.model.base64}`);
+            setBlenderGlb(
+              `data:model/gltf-binary;base64,${job.output.model.base64}`,
+            );
           }
+          setBlenderMessage('Blender 생성 완료');
           setExportStatus('submitted');
           return;
         }
-        if (job.status === 'FAILED' || job.status === 'CANCELLED' || job.status === 'TIMED_OUT') {
+        if (
+          job.status === 'FAILED' ||
+          job.status === 'CANCELLED' ||
+          job.status === 'TIMED_OUT'
+        ) {
+          setBlenderJobId(null);
+          setBlenderMessage(
+            `GPU 작업 종료: ${job.status}${job.error ? ' · ' + String(job.error).slice(0, 160) : ''}`,
+          );
           setExportStatus('error');
           return;
         }
-      } catch { /* retry */ }
+      } catch (error) {
+        setBlenderMessage(
+          error instanceof Error ? error.message : 'GPU 상태 확인 실패',
+        );
+        setExportStatus('error');
+        return;
+      }
     }
+    setBlenderMessage(
+      '상태 확인 시간이 초과되었습니다. 서버 작업은 계속될 수 있습니다.',
+    );
     setExportStatus('error');
   }, []);
 
   const exportBlender = useCallback(async () => {
-    if (!result || !scenario || exportStatus === 'submitting') return;
+    if (
+      !result ||
+      !scenario ||
+      exportStatus === 'submitting' ||
+      exportStatus === 'submitted'
+    )
+      return;
+    if (blenderJobId) {
+      void pollBlenderJob(blenderJobId);
+      return;
+    }
+    if (!scenario.massing) {
+      setBlenderMessage(
+        '실제 경계 내 배치 계산 후 Blender를 생성할 수 있습니다.',
+      );
+      setExportStatus('error');
+      return;
+    }
     if (!savedAnalysisId) {
       setExportStatus('error');
       return;
@@ -336,9 +514,25 @@ export function AnalysisWorkspace() {
           address: result.data.identity.jibunAddress.value,
           parcel: {
             areaSqm: result.data.geometry.areaSqm.value ?? 500,
-            boundary: boundary?.coordinates[0]?.map(([lon, lat]: [number, number]) => ({ latitude: lat, longitude: lon })),
+            boundary: boundary?.coordinates[0]?.map(
+              ([lon, lat]: [number, number]) => ({
+                latitude: lat,
+                longitude: lon,
+              }),
+            ),
           },
+          context: result.data.context
+            .filter((b) => b.footprint.coordinates.length === 1)
+            .map((b) => ({
+              footprint: b.footprint.coordinates[0].map(
+                ([longitude, latitude]) => ({ latitude, longitude }),
+              ),
+              heightM: b.heightM.value ?? 9,
+            })),
           scenario: {
+            placement: scenario.massing,
+            floorAreasSqm: scenario.massing.floorAreasSqm,
+            floorHeights: scenario.floors.map((f) => f.heightM),
             id: scenario.id,
             label: scenario.name,
             floors: scenario.floors.length,
@@ -347,29 +541,46 @@ export function AnalysisWorkspace() {
           },
         }),
       });
-      if (!res.ok) throw new Error('Blender 모델링 요청 실패');
       const body = await res.json();
+      if (!res.ok)
+        throw new Error(body.error?.message ?? 'Blender 모델링 요청 실패');
       if (body?.data?.jobId) {
+        setBlenderJobId(body.data.jobId);
         void pollBlenderJob(body.data.jobId);
       }
+      if (!body?.data?.jobId)
+        throw new Error('GPU 작업 ID가 반환되지 않았습니다.');
       setExportStatus('submitted');
-    } catch {
+    } catch (error) {
+      setBlenderMessage(
+        error instanceof Error ? error.message : 'Blender 요청 실패',
+      );
       setExportStatus('error');
     }
-  }, [result, scenario, savedAnalysisId, exportStatus, pollBlenderJob]);
+  }, [
+    result,
+    scenario,
+    savedAnalysisId,
+    exportStatus,
+    blenderJobId,
+    pollBlenderJob,
+  ]);
 
-  const handleAddressSelect = useCallback((result: AddressResult) => {
-    const selected = result.jibunAddress || result.roadAddress;
-    if (!selected) return;
-    setAddress(selected);
-    setQuery(selected);
-    window.history.replaceState(
-      null,
-      '',
-      `/analysis?address=${encodeURIComponent(selected)}`,
-    );
-    void analyze(selected);
-  }, [analyze]);
+  const handleAddressSelect = useCallback(
+    (result: AddressResult) => {
+      const selected = result.jibunAddress || result.roadAddress;
+      if (!selected) return;
+      setAddress(selected);
+      setQuery(selected);
+      window.history.replaceState(
+        null,
+        '',
+        `/analysis?address=${encodeURIComponent(selected)}`,
+      );
+      void analyze(selected);
+    },
+    [analyze],
+  );
 
   return (
     <main className="analysis-readable site-shell min-h-screen text-white">
@@ -400,7 +611,9 @@ export function AnalysisWorkspace() {
               type="button"
               size="sm"
               disabled={!address}
-              onClick={() => { if (address) void analyze(address, true); }}
+              onClick={() => {
+                if (address) void analyze(address, true);
+              }}
               className="h-9 shrink-0 bg-cyan-300 px-4 text-slate-950 hover:bg-cyan-200"
             >
               재분석
@@ -475,22 +688,7 @@ export function AnalysisWorkspace() {
             <div className="w-full max-w-sm text-center">
               <LoaderCircle className="mx-auto size-10 animate-spin text-cyan-300" />
               <p className="mt-6 text-base font-medium text-white">{message}</p>
-              <div className="mx-auto mt-6 space-y-2">
-                {['주소 해석', '건축물대장', '공시지가·실거래', '토지이용계획', '기상·일조', '시나리오 산출'].map((step, i) => (
-                  <div key={step} className="flex items-center gap-3">
-                    <div className={`grid size-5 place-items-center rounded-full text-[10px] font-bold ${i < loadingStep ? 'bg-cyan-300 text-slate-950' : i === loadingStep ? 'border border-cyan-300/50 text-cyan-300' : 'border border-white/10 text-slate-600'}`}>
-                      {i < loadingStep ? '✓' : i + 1}
-                    </div>
-                    <span className={`text-xs ${i < loadingStep ? 'text-cyan-200' : i === loadingStep ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {step}
-                    </span>
-                    {i === loadingStep && <LoaderCircle className="size-3 animate-spin text-cyan-300/60" />}
-                  </div>
-                ))}
-              </div>
-              <div className="mx-auto mt-6 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
-                <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-lime-300 transition-all duration-700" style={{ width: `${Math.min((loadingStep / 6) * 100, 100)}%` }} />
-              </div>
+              <AnalysisProgressView progress={progress} />
             </div>
           </div>
         )}
@@ -500,7 +698,10 @@ export function AnalysisWorkspace() {
             <Card className="max-w-md border border-rose-400/20 bg-rose-400/5 text-white">
               <CardContent className="flex flex-col items-center py-8 text-center">
                 <AlertTriangle className="size-8 text-rose-300" />
-                <p className="mt-4 text-sm">{message}</p>
+                <p className="mt-4 text-sm" role="alert">
+                  {message}
+                </p>
+                <AnalysisProgressView progress={progress} />
                 <Button className="mt-5" onClick={() => void analyze(address)}>
                   <RefreshCw />
                   다시 시도
@@ -534,7 +735,11 @@ export function AnalysisWorkspace() {
                             : 'border-cyan-300/20 bg-cyan-300/8 text-cyan-200'
                       }
                     >
-                      {result.meta.mode === 'live' ? 'LIVE' : result.meta.mode === 'hybrid' ? 'HYBRID' : 'PREVIEW'}
+                      {result.meta.mode === 'live'
+                        ? 'LIVE'
+                        : result.meta.mode === 'hybrid'
+                          ? 'HYBRID'
+                          : 'PREVIEW'}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -542,7 +747,11 @@ export function AnalysisWorkspace() {
                   <Metric
                     icon={Ruler}
                     label="대지면적"
-                    value={result.data.geometry.areaSqm.value != null ? `${result.data.geometry.areaSqm.value.toLocaleString('ko-KR')}㎡` : '-'}
+                    value={
+                      result.data.geometry.areaSqm.value != null
+                        ? `${result.data.geometry.areaSqm.value.toLocaleString('ko-KR')}㎡`
+                        : '-'
+                    }
                   />
                   <Metric
                     icon={Building2}
@@ -552,12 +761,20 @@ export function AnalysisWorkspace() {
                   <Metric
                     icon={MapPinned}
                     label="도로 폭"
-                    value={result.data.geometry.roadWidthM.value != null ? `약 ${result.data.geometry.roadWidthM.value}m` : '미확인'}
+                    value={
+                      result.data.geometry.roadWidthM.value != null
+                        ? `약 ${result.data.geometry.roadWidthM.value}m`
+                        : '미확인'
+                    }
                   />
                   <Metric
                     icon={TrendingUp}
                     label="경사"
-                    value={result.data.geometry.slopePercent.value != null ? `${result.data.geometry.slopePercent.value}%` : '미확인'}
+                    value={
+                      result.data.geometry.slopePercent.value != null
+                        ? `${result.data.geometry.slopePercent.value}%`
+                        : '미확인'
+                    }
                   />
                 </CardContent>
               </Card>
@@ -592,7 +809,9 @@ export function AnalysisWorkspace() {
                 <Card className="border border-white/8 bg-white/[0.035] text-white">
                   <CardContent className="flex items-center gap-3 py-4">
                     <LoaderCircle className="size-4 animate-spin text-amber-300" />
-                    <span className="text-xs text-slate-400">일조 분석 중...</span>
+                    <span className="text-xs text-slate-400">
+                      일조 분석 중...
+                    </span>
                   </CardContent>
                 </Card>
               )}
@@ -608,29 +827,39 @@ export function AnalysisWorkspace() {
                     <div className="rounded-xl border border-white/8 bg-black/10 p-3">
                       <p className="text-[10px] text-slate-500">동지 (12/22)</p>
                       <p className="mt-1 text-sm text-slate-200">
-                        {sunlight.winterSolstice.sunrise} ~ {sunlight.winterSolstice.sunset}
+                        {sunlight.winterSolstice.sunrise} ~{' '}
+                        {sunlight.winterSolstice.sunset}
                       </p>
-                      <p className="text-xs text-slate-400">{sunlight.winterSolstice.daylightHours}시간</p>
+                      <p className="text-xs text-slate-400">
+                        {sunlight.winterSolstice.daylightHours}시간
+                      </p>
                     </div>
                     <div className="rounded-xl border border-white/8 bg-black/10 p-3">
                       <p className="text-[10px] text-slate-500">하지 (6/21)</p>
                       <p className="mt-1 text-sm text-slate-200">
-                        {sunlight.summerSolstice.sunrise} ~ {sunlight.summerSolstice.sunset}
+                        {sunlight.summerSolstice.sunrise} ~{' '}
+                        {sunlight.summerSolstice.sunset}
                       </p>
-                      <p className="text-xs text-slate-400">{sunlight.summerSolstice.daylightHours}시간</p>
+                      <p className="text-xs text-slate-400">
+                        {sunlight.summerSolstice.daylightHours}시간
+                      </p>
                     </div>
                     <div className="rounded-xl border border-white/8 bg-black/10 p-3">
                       <p className="text-[10px] text-slate-500">춘분 (3/20)</p>
                       <p className="mt-1 text-sm text-slate-200">
                         {sunlight.equinox.sunrise} ~ {sunlight.equinox.sunset}
                       </p>
-                      <p className="text-xs text-slate-400">{sunlight.equinox.daylightHours}시간</p>
+                      <p className="text-xs text-slate-400">
+                        {sunlight.equinox.daylightHours}시간
+                      </p>
                     </div>
                     <SummaryRow
                       label="연간 일조시간 (추정)"
                       value={`${sunlight.annualSunlightHoursEstimate.toLocaleString('ko-KR')}시간`}
                     />
-                    <p className="text-[9px] leading-4 text-slate-600">{sunlight.disclaimer}</p>
+                    <p className="text-[9px] leading-4 text-slate-600">
+                      {sunlight.disclaimer}
+                    </p>
                   </CardContent>
                 </Card>
               )}
@@ -643,8 +872,8 @@ export function AnalysisWorkspace() {
                     address={address}
                     center={
                       result.data.identity.center.value ?? {
-                        latitude: 37.5446,
-                        longitude: 127.0558,
+                        latitude: 0,
+                        longitude: 0,
                       }
                     }
                     boundary={result.data.geometry.boundary}
@@ -657,12 +886,14 @@ export function AnalysisWorkspace() {
                     address={address}
                     center={
                       result.data.identity.center.value ?? {
-                        latitude: 37.5446,
-                        longitude: 127.0558,
+                        latitude: 0,
+                        longitude: 0,
                       }
                     }
                     areaSqm={result.data.geometry.areaSqm.value ?? undefined}
                     scenario={scenario}
+                    boundary={result.data.geometry.boundary.value}
+                    context={result.data.context}
                     glbDataUrl={blenderGlb}
                   />
                 )}
@@ -674,7 +905,9 @@ export function AnalysisWorkspace() {
                   </p>
                   <p className="mt-1 text-base font-medium text-white">
                     {sceneMode === 'massing'
-                      ? (scenarioId === 'custom' ? '세부설정 시나리오' : `${scenario.name} 시나리오`)
+                      ? scenarioId === 'custom'
+                        ? '세부설정 시나리오'
+                        : `${scenario.name} 시나리오`
                       : '도시·지형 컨텍스트'}
                   </p>
                 </div>
@@ -709,10 +942,18 @@ export function AnalysisWorkspace() {
                     onClick={() => setScenarioId('custom')}
                     className={`flex min-w-[132px] items-center gap-2 rounded-xl border px-4 py-3 text-left transition ${scenarioId === 'custom' ? 'border-cyan-300/45 bg-cyan-300/10 shadow-[0_0_28px_rgba(34,211,238,.08)]' : 'border-white/8 bg-white/[0.035] hover:bg-white/[0.06]'}`}
                   >
-                    <Settings2 className={`size-4 ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-400'}`} />
+                    <Settings2
+                      className={`size-4 ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-400'}`}
+                    />
                     <div>
-                      <span className={`block text-sm font-medium ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-300'}`}>세부설정</span>
-                      <span className="mt-1 block text-xs text-slate-500">직접 조정</span>
+                      <span
+                        className={`block text-sm font-medium ${scenarioId === 'custom' ? 'text-cyan-200' : 'text-slate-300'}`}
+                      >
+                        세부설정
+                      </span>
+                      <span className="mt-1 block text-xs text-slate-500">
+                        직접 조정
+                      </span>
                     </div>
                   </button>
                 </div>
@@ -722,57 +963,74 @@ export function AnalysisWorkspace() {
             <aside className="space-y-4">
               {scenarioId === 'custom' && result ? (
                 <ScenarioCustomizer
+                  appliedScenario={scenario}
                   areaSqm={result.data.geometry.areaSqm.value ?? 500}
                   maxCoverage={legalLimits.maxCoverage}
                   maxFar={legalLimits.maxFar}
-                  comparablePricePerSqm={result.data.market.comparableMedianPerSqm.value ?? 0}
-                  landPricePerSqm={result.data.market.officialLandPricePerSqm.value ?? 0}
+                  comparablePricePerSqm={
+                    result.data.market.comparableMedianPerSqm.value ?? 0
+                  }
+                  landPricePerSqm={
+                    result.data.market.officialLandPricePerSqm.value ?? 0
+                  }
                   onScenarioChange={setCustomScenario}
                 />
               ) : (
-              <Card className="border border-lime-300/15 bg-lime-300/[0.045] text-white">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <Sparkles className="size-4 text-lime-300" />
-                      시나리오 요약
-                    </span>
-                    <span className="text-lime-200">
-                      {scenario.floors.length}F
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <SummaryRow
-                    label="예상 연면적"
-                    value={`${scenario.grossFloorAreaSqm.toLocaleString('ko-KR')}㎡`}
-                  />
-                  <SummaryRow
-                    label="건폐율 / 용적률"
-                    value={`${scenario.buildingCoverageRatio}% / ${scenario.floorAreaRatio}%`}
-                  />
-                  <SummaryRow
-                    label="예상 매출"
-                    value={scenario.estimatedRevenueKrw > 0 ? formatKrw(scenario.estimatedRevenueKrw) : '미확인'}
-                  />
-                  <SummaryRow
-                    label="예상 총사업비"
-                    value={scenario.estimatedCostKrw > 0 ? formatKrw(scenario.estimatedCostKrw) : '미확인'}
-                  />
-                  <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                    <span className="text-xs text-slate-400">개략 수익률</span>
-                    {scenario.estimatedRevenueKrw > 0 ? (
-                      <span
-                        className={`text-lg font-semibold ${scenario.estimatedProfitRatePercent >= 0 ? 'text-lime-200' : 'text-rose-300'}`}
-                      >
-                        {scenario.estimatedProfitRatePercent}%
+                <Card className="border border-lime-300/15 bg-lime-300/[0.045] text-white">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="size-4 text-lime-300" />
+                        시나리오 요약
                       </span>
-                    ) : (
-                      <span className="text-sm text-slate-500">시장 데이터 부족</span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      <span className="text-lime-200">
+                        {scenario.floors.length}F
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <SummaryRow
+                      label="예상 연면적"
+                      value={`${scenario.grossFloorAreaSqm.toLocaleString('ko-KR')}㎡`}
+                    />
+                    <SummaryRow
+                      label="건폐율 / 용적률"
+                      value={`${scenario.buildingCoverageRatio}% / ${scenario.floorAreaRatio}%`}
+                    />
+                    <SummaryRow
+                      label="예상 매출"
+                      value={
+                        scenario.estimatedRevenueKrw > 0
+                          ? formatKrw(scenario.estimatedRevenueKrw)
+                          : '미확인'
+                      }
+                    />
+                    <SummaryRow
+                      label="개략 공사비 (가정)"
+                      value={
+                        scenario.estimatedCostKrw > 0
+                          ? formatKrw(scenario.estimatedCostKrw)
+                          : '미확인'
+                      }
+                    />
+                    <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                      <span className="text-xs text-slate-400">
+                        개략 수익률
+                      </span>
+                      {scenario.estimatedRevenueKrw > 0 ? (
+                        <span
+                          className={`text-lg font-semibold ${scenario.estimatedProfitRatePercent >= 0 ? 'text-lime-200' : 'text-rose-300'}`}
+                        >
+                          {scenario.estimatedProfitRatePercent}%
+                        </span>
+                      ) : (
+                        <span className="text-sm text-slate-500">
+                          시장 데이터 부족
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               <Card className="border border-white/8 bg-white/[0.035] text-white">
@@ -785,19 +1043,35 @@ export function AnalysisWorkspace() {
                 <CardContent className="space-y-3">
                   <SummaryRow
                     label="공시지가"
-                    value={result.data.market.officialLandPricePerSqm.value ? `${formatKrw(result.data.market.officialLandPricePerSqm.value)}/㎡` : '미연결'}
+                    value={
+                      result.data.market.officialLandPricePerSqm.value
+                        ? `${formatKrw(result.data.market.officialLandPricePerSqm.value)}/㎡`
+                        : '미연결'
+                    }
                   />
                   <SummaryRow
                     label="유사사례 중앙값"
-                    value={result.data.market.comparableMedianPerSqm.value ? `${formatKrw(result.data.market.comparableMedianPerSqm.value)}/㎡` : '미연결'}
+                    value={
+                      result.data.market.comparableMedianPerSqm.value
+                        ? `${formatKrw(result.data.market.comparableMedianPerSqm.value)}/㎡`
+                        : '미연결'
+                    }
                   />
                   <SummaryRow
                     label="비교 표본"
-                    value={result.data.market.comparableCount.value != null ? `${result.data.market.comparableCount.value}건` : '-'}
+                    value={
+                      result.data.market.comparableCount.value != null
+                        ? `${result.data.market.comparableCount.value}건`
+                        : '-'
+                    }
                   />
                   <SummaryRow
                     label="12개월 추세"
-                    value={result.data.market.trendPercent.value != null ? `${result.data.market.trendPercent.value > 0 ? '+' : ''}${result.data.market.trendPercent.value}%` : '미연결'}
+                    value={
+                      result.data.market.trendPercent.value != null
+                        ? `${result.data.market.trendPercent.value > 0 ? '+' : ''}${result.data.market.trendPercent.value}%`
+                        : '미연결'
+                    }
                   />
                 </CardContent>
               </Card>
@@ -840,33 +1114,66 @@ export function AnalysisWorkspace() {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.07] py-3 text-sm text-cyan-200 transition hover:bg-cyan-300/[0.12] disabled:opacity-60"
               >
                 {saveStatus === 'saving' ? (
-                  <><LoaderCircle className="size-4 animate-spin" /> 저장 중...</>
+                  <>
+                    <LoaderCircle className="size-4 animate-spin" /> 저장 중...
+                  </>
                 ) : saveStatus === 'saved' ? (
-                  <><CheckCircle2 className="size-4 text-lime-300" /> 저장 완료</>
+                  <>
+                    <CheckCircle2 className="size-4 text-lime-300" /> 저장 완료
+                  </>
                 ) : saveStatus === 'error' ? (
-                  <><Save className="size-4" /> 다시 저장 (로그인 필요)</>
+                  <>
+                    <Save className="size-4" /> 다시 저장 (로그인 필요)
+                  </>
                 ) : (
-                  <><Save className="size-4" /> 분석 결과 저장</>
+                  <>
+                    <Save className="size-4" /> 분석 결과 저장
+                  </>
                 )}
               </Button>
 
               <Button
                 onClick={exportBlender}
-                disabled={!savedAnalysisId || exportStatus === 'submitting' || (exportStatus === 'submitted' && !!blenderPreview)}
+                disabled={
+                  !savedAnalysisId ||
+                  exportStatus === 'submitting' ||
+                  exportStatus === 'submitted'
+                }
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] disabled:opacity-50"
               >
                 {exportStatus === 'submitting' ? (
-                  <><LoaderCircle className="size-4 animate-spin" /> Blender 렌더링 중...</>
+                  <>
+                    <LoaderCircle className="size-4 animate-spin" /> Blender
+                    렌더링 중...
+                  </>
                 ) : exportStatus === 'submitted' && blenderPreview ? (
-                  <><CheckCircle2 className="size-4 text-lime-300" /> 조감도 렌더링 완료</>
+                  <>
+                    <CheckCircle2 className="size-4 text-lime-300" /> 조감도
+                    렌더링 완료
+                  </>
                 ) : exportStatus === 'submitted' ? (
-                  <><LoaderCircle className="size-4 animate-spin" /> GPU 워커 처리 중...</>
+                  <>
+                    <LoaderCircle className="size-4 animate-spin" /> GPU 작업
+                    상태 확인 중...
+                  </>
                 ) : (
-                  <><Box className="size-4" /> 3D 모델 + 조감도 생성 (Blender)</>
+                  <>
+                    <Box className="size-4" />{' '}
+                    {blenderJobId
+                      ? 'GPU 작업 상태 다시 확인'
+                      : '3D 모델 + 조감도 생성 (Blender)'}
+                  </>
                 )}
               </Button>
+              {blenderMessage && (
+                <output className="block text-sm text-slate-400">
+                  {blenderMessage}
+                </output>
+              )}
               {!savedAnalysisId && exportStatus === 'error' && (
-                <p className="px-1 text-xs text-amber-300">먼저 분석 결과를 저장해 주세요.</p>
+                <p className="px-1 text-xs text-amber-300">
+                  먼저 분석 결과를 저장해 주세요.
+                </p>
               )}
               {blenderPreview && (
                 <Card className="overflow-hidden border border-lime-300/15 bg-black/20">
@@ -877,7 +1184,10 @@ export function AnalysisWorkspace() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-2">
-                    <img
+                    <Image
+                      unoptimized
+                      width={1024}
+                      height={768}
                       src={blenderPreview}
                       alt="Blender 조감도 렌더링"
                       className="w-full rounded-lg"
@@ -913,11 +1223,16 @@ export function AnalysisWorkspace() {
 
       {/* Report generation confirmation modal */}
       {showReportConfirm && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm" onClick={() => setShowReportConfirm(false)}>
-          <div className="mx-4 w-full max-w-md rounded-2xl border border-white/12 bg-[#0c1829] p-6 shadow-[0_40px_120px_rgba(0,0,0,.6)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-2xl border border-white/12 bg-[#0c1829] p-6 shadow-[0_40px_120px_rgba(0,0,0,.6)]">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">보고서 생성</h3>
-              <button type="button" onClick={() => setShowReportConfirm(false)} className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white">
+              <button
+                type="button"
+                aria-label="보고서 창 닫기"
+                onClick={() => setShowReportConfirm(false)}
+                className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white"
+              >
                 <X className="size-4" />
               </button>
             </div>
@@ -925,25 +1240,54 @@ export function AnalysisWorkspace() {
               <div className="flex gap-3">
                 <FileText className="mt-0.5 size-5 shrink-0 text-lime-300" />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-white">PLINT Decision Report</p>
+                  <p className="text-sm font-medium text-white">
+                    PLINT Decision Report
+                  </p>
                   <p className="mt-1 text-xs text-slate-400">{address}</p>
                   {result && (
                     <p className="mt-2 text-xs text-slate-500">
-                      {result.data.scenarios.length}개 시나리오 · 데이터 커버리지 {result.data.coverage.percent}%
+                      {result.data.scenarios.length}개 시나리오 · 데이터
+                      커버리지 {result.data.coverage.percent}%
                     </p>
                   )}
                 </div>
               </div>
             </div>
-            <p className="mt-4 text-xs text-slate-400">현재 분석 결과를 기반으로 개발·상권 보고서를 생성합니다.</p>
+            <p className="mt-4 text-xs text-slate-400">
+              현재 분석 결과를 기반으로 개발·상권 보고서를 생성합니다.
+            </p>
             <div className="mt-5 flex gap-3">
-              <button type="button" onClick={() => setShowReportConfirm(false)} className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] py-2.5 text-sm text-slate-300 hover:bg-white/[0.08]">
+              <button
+                type="button"
+                onClick={() => setShowReportConfirm(false)}
+                className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] py-2.5 text-sm text-slate-300 hover:bg-white/[0.08]"
+              >
                 취소
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setShowReportConfirm(false);
+                  try {
+                    sessionStorage.setItem(
+                      'plint-report-input',
+                      JSON.stringify({
+                        ...result,
+                        data: result
+                          ? {
+                              ...result.data,
+                              scenarios:
+                                scenario?.id === 'custom'
+                                  ? [...result.data.scenarios, scenario]
+                                  : result.data.scenarios,
+                            }
+                          : undefined,
+                        selectedScenarioId: scenario?.id,
+                      }),
+                    );
+                  } catch {
+                    /* Report can restore the saved analysis. */
+                  }
                   router.push(`/report?address=${encodeURIComponent(address)}`);
                 }}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-300 py-2.5 text-sm font-medium text-slate-950 hover:bg-lime-200"

@@ -53,7 +53,12 @@ function toDeg(rad: number): number {
 }
 
 function formatTime(date: Date): string {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(date);
 }
 
 function diffHours(a: Date, b: Date): number {
@@ -72,8 +77,12 @@ function analyzeDay(
   shadows: ShadowVector[];
 } {
   const times = SunCalc.getTimes(date, lat, lon);
-  const sunrise = times.sunrise ?? new Date(date.getFullYear(), date.getMonth(), date.getDate(), 6, 0);
-  const sunset = times.sunset ?? new Date(date.getFullYear(), date.getMonth(), date.getDate(), 18, 0);
+  const sunrise =
+    times.sunrise ??
+    new Date(date.getFullYear(), date.getMonth(), date.getDate(), 6, 0);
+  const sunset =
+    times.sunset ??
+    new Date(date.getFullYear(), date.getMonth(), date.getDate(), 18, 0);
   const daylightHours = diffHours(sunrise, sunset);
   const dateStr = date.toISOString().slice(0, 10);
 
@@ -83,7 +92,14 @@ function analyzeDay(
   const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
   for (const hour of hours) {
-    const checkTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, 0, 0);
+    const checkTime = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      hour,
+      0,
+      0,
+    );
     const pos = SunCalc.getPosition(checkTime, lat, lon);
     const altDeg = toDeg(pos.altitude);
     const azDeg = toDeg(pos.azimuth) + 180;
@@ -129,7 +145,10 @@ export function analyzeSunlight(
   const equinox = analyzeDay(new Date(y, 2, 20), latitude, longitude);
 
   const avgDaylight =
-    (winterSolstice.daylightHours + summerSolstice.daylightHours + equinox.daylightHours * 2) / 4;
+    (winterSolstice.daylightHours +
+      summerSolstice.daylightHours +
+      equinox.daylightHours * 2) /
+    4;
   const annualSunlightHoursEstimate = Math.round(avgDaylight * 365 * 0.45);
 
   return {
