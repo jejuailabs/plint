@@ -37,7 +37,7 @@ export async function GET() {
 
     return success(
       (data ?? []).map(({ analyses, ...site }) => {
-        const report = (
+        const completed = (
           (analyses ?? []) as {
             id: string;
             status: string;
@@ -49,7 +49,22 @@ export async function GET() {
           .sort((a, b) =>
             (b.completed_at ?? '').localeCompare(a.completed_at ?? ''),
           )[0];
-        return { ...site, report_id: report?.id ?? null };
+        const latestCompleted = (
+          (analyses ?? []) as {
+            id: string;
+            status: string;
+            completed_at: string | null;
+          }[]
+        )
+          .filter((a) => a.status === 'completed')
+          .sort((a, b) =>
+            (b.completed_at ?? '').localeCompare(a.completed_at ?? ''),
+          )[0];
+        return {
+          ...site,
+          analysis_id: latestCompleted?.id ?? null,
+          report_id: completed?.id ?? null,
+        };
       }),
     );
   } catch (thrown) {

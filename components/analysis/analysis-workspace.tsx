@@ -150,7 +150,11 @@ export function AnalysisWorkspace() {
   useEffect(() => () => analysisRequest.current?.abort(), []);
 
   const analyze = useCallback(
-    async (nextAddress: string, forceRefresh = false) => {
+    async (
+      nextAddress: string,
+      forceRefresh = false,
+      existingAnalysisId?: string | null,
+    ) => {
       analysisRequest.current?.abort();
       const controller = new AbortController();
       analysisRequest.current = controller;
@@ -165,9 +169,14 @@ export function AnalysisWorkspace() {
       );
       if (!forceRefresh) {
         try {
+          const lookupParams = new URLSearchParams({ address: nextAddress });
+          if (existingAnalysisId)
+            lookupParams.set('analysisId', existingAnalysisId);
           const lookupRes = await fetch(
-            `/api/analysis/lookup?address=${encodeURIComponent(nextAddress)}`,
-            { signal },
+            `/api/analysis/lookup?${lookupParams}`,
+            {
+              signal,
+            },
           );
           if (lookupRes.ok) {
             const lookupBody = await lookupRes.json();
@@ -206,6 +215,13 @@ export function AnalysisWorkspace() {
                   })
                   .catch(() => setSunlightStatus('error'));
               }
+              return;
+            }
+            if (saved?.result) {
+              setStatus('error');
+              setMessage(
+                '저장된 분석 형식이 현재 화면과 달라 바로 표시할 수 없습니다. 재분석을 선택하면 새 결과로 갱신합니다.',
+              );
               return;
             }
           }
@@ -315,13 +331,14 @@ export function AnalysisWorkspace() {
   );
 
   useEffect(() => {
-    const initial =
-      new URLSearchParams(window.location.search).get('address')?.trim() || '';
+    const initialParams = new URLSearchParams(window.location.search);
+    const initial = initialParams.get('address')?.trim() || '';
+    const initialAnalysisId = initialParams.get('analysisId')?.trim();
     if (initial) {
       const timer = window.setTimeout(() => {
         setAddress(initial);
         setQuery(initial);
-        void analyze(initial);
+        void analyze(initial, false, initialAnalysisId);
       }, 0);
       return () => window.clearTimeout(timer);
     }
@@ -705,6 +722,28 @@ export function AnalysisWorkspace() {
                 <Button className="mt-5" onClick={() => void analyze(address)}>
                   <RefreshCw />
                   다시 시도
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {status === 'ready' && (!result || !scenario) && (
+          <div className="grid min-h-[calc(100vh-64px)] place-items-center px-6">
+            <Card className="max-w-md border border-amber-300/20 bg-amber-300/5 text-white">
+              <CardContent className="flex flex-col items-center py-8 text-center">
+                <AlertTriangle className="size-8 text-amber-200" />
+                <p className="mt-4 text-sm">
+                  분석 결과를 표시할 수 없습니다. 주소 자료를 다시 조회해
+                  주세요.
+                </p>
+                <Button
+                  className="mt-5"
+                  onClick={() => address && void analyze(address, true)}
+                  disabled={!address}
+                >
+                  <RefreshCw />
+                  다시 분석
                 </Button>
               </CardContent>
             </Card>

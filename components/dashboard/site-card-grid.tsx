@@ -11,6 +11,7 @@ type Site = {
   id: string;
   jibun_address: string;
   created_at: string;
+  analysis_id?: string | null;
   report_id?: string | null;
 };
 
@@ -24,6 +25,9 @@ function formatDate(iso: string) {
 }
 
 function SiteCard({ site }: { site: Site }) {
+  const analysisHref = site.analysis_id
+    ? `/analysis?analysisId=${encodeURIComponent(site.analysis_id)}&address=${encodeURIComponent(site.jibun_address)}`
+    : `/analysis?address=${encodeURIComponent(site.jibun_address)}`;
   return (
     <article className="group rounded-2xl border border-white/8 bg-white/[0.035] p-5 transition hover:border-white/15 hover:bg-white/[0.06]">
       <div className="flex items-start justify-between">
@@ -35,11 +39,7 @@ function SiteCard({ site }: { site: Site }) {
         </span>
       </div>
       <p className="mt-4 text-sm font-medium text-white group-hover:text-cyan-100">
-        <Link
-          href={`/analysis?address=${encodeURIComponent(site.jibun_address)}`}
-        >
-          {site.jibun_address}
-        </Link>
+        <Link href={analysisHref}>{site.jibun_address}</Link>
       </p>
       <div className="mt-3 flex items-center gap-3 text-[11px] text-slate-500">
         <span className="flex items-center gap-1">
@@ -48,11 +48,7 @@ function SiteCard({ site }: { site: Site }) {
         </span>
       </div>
       <div className="mt-4 flex gap-4 text-xs text-cyan-300">
-        <Link
-          href={`/analysis?address=${encodeURIComponent(site.jibun_address)}`}
-        >
-          분석 열기
-        </Link>
+        <Link href={analysisHref}>분석 열기</Link>
         {site.report_id && (
           <Link
             href={`/report?address=${encodeURIComponent(site.jibun_address)}&reportId=${encodeURIComponent(site.report_id)}`}
