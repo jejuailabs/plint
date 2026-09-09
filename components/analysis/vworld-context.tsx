@@ -1,4 +1,12 @@
 'use client';
+import {
+  ChevronDown,
+  ChevronUp,
+  Minus,
+  Plus,
+  RotateCcw,
+  RotateCw,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { CesiumContextProps } from './cesium-context';
 export function VWorldContext(props: CesiumContextProps) {
@@ -15,6 +23,11 @@ export function VWorldContext(props: CesiumContextProps) {
     >(),
   );
   const [error, setError] = useState('');
+  const sendCamera = (heading: number, pitch: number, range: number) =>
+    frame.current?.contentWindow?.postMessage(
+      { channel: 'plint-vworld', type: 'camera', heading, pitch, range },
+      location.origin,
+    );
   useEffect(() => {
     latest.current = props;
   }, [props]);
@@ -134,6 +147,56 @@ export function VWorldContext(props: CesiumContextProps) {
       >
         대상 필지로 확대
       </button>
+      <div className="absolute right-3 top-1/2 z-20 flex -translate-y-1/2 flex-col gap-1">
+        {[
+          {
+            icon: <RotateCcw className="size-3.5" />,
+            label: '좌회전',
+            values: [-0.15, 0, 0],
+          },
+          {
+            icon: <RotateCw className="size-3.5" />,
+            label: '우회전',
+            values: [0.15, 0, 0],
+          },
+          {
+            icon: <ChevronUp className="size-3.5" />,
+            label: '낮은 시점',
+            values: [0, 0.1, 0],
+          },
+          {
+            icon: <ChevronDown className="size-3.5" />,
+            label: '높은 시점',
+            values: [0, -0.1, 0],
+          },
+          {
+            icon: <Plus className="size-3.5" />,
+            label: '확대',
+            values: [0, 0, -50],
+          },
+          {
+            icon: <Minus className="size-3.5" />,
+            label: '축소',
+            values: [0, 0, 50],
+          },
+        ].map((button) => (
+          <button
+            key={button.label}
+            type="button"
+            title={button.label}
+            aria-label={button.label}
+            onClick={() =>
+              sendCamera(...(button.values as [number, number, number]))
+            }
+            className="grid size-8 place-items-center rounded-lg border border-slate-600/40 bg-slate-900/80 text-slate-300 backdrop-blur transition-colors hover:bg-slate-700/80 hover:text-white"
+          >
+            {button.icon}
+          </button>
+        ))}
+      </div>
+      <p className="pointer-events-none absolute bottom-12 left-3 rounded bg-slate-950/85 px-2 py-1 text-[10px] text-slate-300">
+        좌클릭 드래그: 회전 · Shift+좌클릭 드래그: 높이 시점
+      </p>
       {error && (
         <p
           role="alert"

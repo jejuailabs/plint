@@ -32,11 +32,23 @@
     notice.textContent='VWorld 3D · 제안 매스는 규제 미검증 · 배경 기존 건물은 현황 자료';
     send({type:'ready'});
   }
+  function moveCamera(headingDelta,pitchDelta,rangeDelta){
+    if(!viewer||!config)return;
+    const C=window.Cesium;
+    const target=C.Cartesian3.fromDegrees(config.center.longitude,config.center.latitude,0);
+    const range=Math.max(45,C.Cartesian3.distance(viewer.camera.position,target)+rangeDelta);
+    const heading=viewer.camera.heading+headingDelta;
+    const pitch=Math.max(C.Math.toRadians(-82),Math.min(C.Math.toRadians(-12),viewer.camera.pitch+pitchDelta));
+    viewer.camera.lookAt(target,new C.HeadingPitchRange(heading,pitch,range));
+    viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
+    viewer.scene.requestRender();
+  }
   addEventListener('message', async(event)=>{
     if(event.origin!==location.origin||event.source!==parent||event.data?.channel!=='plint-vworld')return;
     const message=event.data;
     if(message.type==='config'){if(!started)initialize(message.data);else await draw(message.data);return;}
     if(message.type==='focus'&&config&&viewer){await draw(config);return;}
+    if(message.type==='camera'){moveCamera(Number(message.heading)||0,Number(message.pitch)||0,Number(message.range)||0);return;}
     if(message.type==='capture'&&viewer){
       try {
         const started=Date.now();
@@ -59,7 +71,10 @@
   try {
     if(!window.vw)throw new Error('VWorld SDK를 불러오지 못했습니다. API 도메인 및 네트워크를 확인해 주세요.');
     const map=new vw.Map();map.setOption({mapId:'map',logo:true,navigation:true});map.setMapId('map');
-    vw.ws3dInitCallBack=()=>{clearTimeout(timeout);viewer=window.ws3d?.viewer;if(!viewer){fail('VWorld 뷰어 초기화 실패');return;}if(config)void draw(config);send({type:'initialized'});};
+    vw.ws3dInitCallBack=()=>{clearTimeout(timeout);viewer=window.ws3d?.viewer;if(!viewer){fail('VWorld 뷰어 초기화 실패');return;}
+      const c=viewer.scene.screenSpaceCameraController;
+      if(c&&window.Cesium){c.enableRotate=true;c.enableTilt=true;c.rotateEventTypes=[window.Cesium.CameraEventType.LEFT_DRAG];c.tiltEventTypes=[{eventType:window.Cesium.CameraEventType.LEFT_DRAG,modifier:window.Cesium.KeyboardEventModifier.SHIFT},window.Cesium.CameraEventType.MIDDLE_DRAG];}
+      if(config)void draw(config);send({type:'initialized'});};
     map.setInitPosition(new vw.CameraPosition(new vw.CoordZ(data.center.longitude,data.center.latitude,400),new vw.Direction(330,-40,0)));
     map.start();
   }catch(error){clearTimeout(timeout);fail(error.message);}
