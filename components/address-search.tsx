@@ -1,6 +1,12 @@
 'use client';
 
-import { MapPin, Search, LoaderCircle, Building2, LandPlot } from 'lucide-react';
+import {
+  MapPin,
+  Search,
+  LoaderCircle,
+  Building2,
+  LandPlot,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type AddressResult = {
@@ -11,6 +17,7 @@ export type AddressResult = {
   siNm: string;
   sggNm: string;
   emdNm: string;
+  isDirectParcelQuery?: boolean;
 };
 
 type Props = {
@@ -47,11 +54,30 @@ export function AddressSearch({
     }
     setLoading(true);
     try {
-      const res = await fetch(`/api/address/search?q=${encodeURIComponent(keyword.trim())}`);
+      const res = await fetch(
+        `/api/address/search?q=${encodeURIComponent(keyword.trim())}`,
+      );
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setResults(data.results ?? []);
-      setIsOpen((data.results ?? []).length > 0);
+      const found = data.results ?? [];
+      // A vacant parcel often has no road-name/building address. Keep the
+      // entered 지번 as a selectable parcel lookup rather than blocking it.
+      const nextResults = found.length
+        ? found
+        : [
+            {
+              roadAddress: '',
+              jibunAddress: keyword.trim(),
+              zipCode: '',
+              buildingName: '',
+              siNm: '',
+              sggNm: '',
+              emdNm: '',
+              isDirectParcelQuery: true,
+            },
+          ];
+      setResults(nextResults);
+      setIsOpen(nextResults.length > 0);
       setActiveIndex(-1);
     } catch {
       setResults([]);
@@ -61,43 +87,55 @@ export function AddressSearch({
     }
   }, []);
 
-  const handleChange = useCallback((value: string) => {
-    setQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(value), 300);
-  }, [search]);
+  const handleChange = useCallback(
+    (value: string) => {
+      setQuery(value);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => search(value), 300);
+    },
+    [search],
+  );
 
-  const handleSelect = useCallback((result: AddressResult) => {
-    setQuery(result.jibunAddress || result.roadAddress);
-    setIsOpen(false);
-    setResults([]);
-    onSelect(result);
-  }, [onSelect]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!isOpen || results.length === 0) {
-      if (e.key === 'Enter') e.preventDefault();
-      return;
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setActiveIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActiveIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (activeIndex >= 0 && activeIndex < results.length) {
-        handleSelect(results[activeIndex]);
-      }
-    } else if (e.key === 'Escape') {
+  const handleSelect = useCallback(
+    (result: AddressResult) => {
+      setQuery(result.jibunAddress || result.roadAddress);
       setIsOpen(false);
-    }
-  }, [isOpen, results, activeIndex, handleSelect]);
+      setResults([]);
+      onSelect(result);
+    },
+    [onSelect],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!isOpen || results.length === 0) {
+        if (e.key === 'Enter') e.preventDefault();
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActiveIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActiveIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeIndex >= 0 && activeIndex < results.length) {
+          handleSelect(results[activeIndex]);
+        }
+      } else if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    },
+    [isOpen, results, activeIndex, handleSelect],
+  );
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -105,9 +143,12 @@ export function AddressSearch({
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
-  useEffect(() => () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    },
+    [],
+  );
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -123,7 +164,9 @@ export function AddressSearch({
           value={query}
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => { if (results.length > 0) setIsOpen(true); }}
+          onFocus={() => {
+            if (results.length > 0) setIsOpen(true);
+          }}
           placeholder={placeholder}
           disabled={disabled}
           autoComplete="off"
@@ -132,7 +175,9 @@ export function AddressSearch({
           aria-expanded={isOpen}
           aria-autocomplete="list"
           aria-controls="address-listbox"
-          aria-activedescendant={activeIndex >= 0 ? `address-option-${activeIndex}` : undefined}
+          aria-activedescendant={
+            activeIndex >= 0 ? `address-option-${activeIndex}` : undefined
+          }
         />
       </div>
 
@@ -163,13 +208,19 @@ export function AddressSearch({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-slate-100">
-                  {result.roadAddress}
+                  {result.isDirectParcelQuery
+                    ? '입력한 지번으로 필지 조회'
+                    : result.roadAddress || result.jibunAddress}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-slate-400">
                   <MapPin className="mr-1 inline size-3" />
-                  {result.jibunAddress}
+                  {result.isDirectParcelQuery
+                    ? `${result.jibunAddress} · 도로명 없는 토지/임야/전 포함`
+                    : result.jibunAddress}
                   {result.buildingName && (
-                    <span className="ml-2 text-cyan-200/70">{result.buildingName}</span>
+                    <span className="ml-2 text-cyan-200/70">
+                      {result.buildingName}
+                    </span>
                   )}
                 </p>
                 <p className="mt-0.5 text-[10px] text-slate-600">

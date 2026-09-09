@@ -113,6 +113,17 @@ export function createJusoAddressConnector(): Connector<
 
         const juso = raw.results.juso?.[0];
         if (!juso) {
+          const parcel = await resolveParcelWithVWorld(input.address, signal);
+          if (parcel) {
+            return {
+              data: parcel,
+              rawSnapshotId: `vworld-parcel-${Date.now()}`,
+              observedAt: new Date().toISOString(),
+              warnings: [
+                '도로명주소 결과 없이 VWorld 필지 좌표·PNU로 해석했습니다.',
+              ],
+            };
+          }
           return emptyResult('No address results found');
         }
 
@@ -221,6 +232,74 @@ export function createJusoAddressConnector(): Connector<
       }
     },
   };
+}
+
+async function resolveParcelWithVWorld(
+  address: string,
+  signal?: AbortSignal,
+): Promise<JusoAddressOutput | null> {
+  const key = process.env.VWORLD_API_KEY;
+  if (!key) return null;
+  try {
+    const geoUrl = new URL('https://api.vworld.kr/req/address');
+    geoUrl.searchParams.set('service', 'address');
+    geoUrl.searchParams.set('request', 'getcoord');
+    geoUrl.searchParams.set('version', '2.0');
+    geoUrl.searchParams.set('crs', 'epsg:4326');
+    geoUrl.searchParams.set('type', 'PARCEL');
+    geoUrl.searchParams.set('address', address);
+    geoUrl.searchParams.set('format', 'json');
+    geoUrl.searchParams.set('key', key);
+    if (process.env.VWORLD_DOMAIN)
+      geoUrl.searchParams.set('domain', process.env.VWORLD_DOMAIN);
+    const geo = await fetchWithRetry<{
+      response?: { result?: { point?: { x?: string; y?: string } } };
+    }>(geoUrl.toString(), { timeoutMs: 5000, signal });
+    const lon = Number(geo.response?.result?.point?.x);
+    const lat = Number(geo.response?.result?.point?.y);
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
+
+    const delta = 0.00008;
+    const wfsUrl = new URL('https://api.vworld.kr/req/wfs');
+    wfsUrl.searchParams.set('service', 'WFS');
+    wfsUrl.searchParams.set('version', '1.1.0');
+    wfsUrl.searchParams.set('request', 'GetFeature');
+    wfsUrl.searchParams.set('typeName', 'lt_c_landinfobasemap');
+    wfsUrl.searchParams.set('srsName', 'EPSG:4326');
+    wfsUrl.searchParams.set('output', 'application/json');
+    wfsUrl.searchParams.set(
+      'bbox',
+      `${lon - delta},${lat - delta},${lon + delta},${lat + delta}`,
+    );
+    wfsUrl.searchParams.set('maxFeatures', '8');
+    wfsUrl.searchParams.set('key', key);
+    if (process.env.VWORLD_DOMAIN)
+      wfsUrl.searchParams.set('domain', process.env.VWORLD_DOMAIN);
+    const wfs = await fetchWithRetry<{
+      features?: Array<{ properties?: Record<string, unknown> }>;
+    }>(wfsUrl.toString(), { timeoutMs: 5000, signal });
+    const pnu = wfs.features
+      ?.map((feature) => {
+        const value = feature.properties?.pnu;
+        return typeof value === 'string' || typeof value === 'number'
+          ? String(value)
+          : '';
+      })
+      .find((value) => /^\d{19}$/.test(value));
+    if (!pnu) return null;
+    return {
+      pnuCode: pnu,
+      jibunAddress: address,
+      roadAddress: '',
+      latitude: lat,
+      longitude: lon,
+      administrativeCode: pnu.slice(0, 10),
+      detailedBuildingNames: [],
+      sourceCoordinate: { x: lon, y: lat, coordinateSystem: 'EPSG:4326' },
+    };
+  } catch {
+    return null;
+  }
 }
 
 function emptyResult(warning: string): ConnectorResult<JusoAddressOutput> {

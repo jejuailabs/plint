@@ -27,6 +27,7 @@
       });
     }
     const target=C.Cartesian3.fromDegrees(data.center.longitude,data.center.latitude,ground);
+    viewer.entities.add({name:'대상 필지',position:C.Cartesian3.fromDegrees(data.center.longitude,data.center.latitude,ground+3),point:{pixelSize:16,color:C.Color.YELLOW,outlineColor:C.Color.BLACK,outlineWidth:3,disableDepthTestDistance:Number.POSITIVE_INFINITY},label:{text:'대상 필지',font:'bold 15px sans-serif',fillColor:C.Color.YELLOW,outlineColor:C.Color.BLACK,outlineWidth:3,style:C.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new C.Cartesian2(0,-28),verticalOrigin:C.VerticalOrigin.BOTTOM,disableDepthTestDistance:Number.POSITIVE_INFINITY}});
     viewer.camera.lookAt(target,new C.HeadingPitchRange(C.Math.toRadians(330),C.Math.toRadians(-40),280));
     viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
     viewer.scene.requestRender();
