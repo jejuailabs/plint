@@ -6,13 +6,16 @@ export async function GET(req: NextRequest) {
     return Response.json({ results: [] });
   }
 
-  const apiKey = process.env.JUSO_API_KEY;
-  if (!apiKey) {
-    return Response.json(
-      { error: { code: 'CONFIG_ERROR', message: '주소 검색 API 키가 설정되지 않았습니다.' } },
-      { status: 500 },
-    );
+  const parcelResults = await searchVWorldParcels(keyword);
+  if (parcelResults.length > 0) {
+    return Response.json({
+      results: parcelResults,
+      totalCount: parcelResults.length,
+    });
   }
+
+  const apiKey = process.env.JUSO_API_KEY;
+  if (!apiKey) return Response.json({ results: [], totalCount: 0 });
 
   const page = req.nextUrl.searchParams.get('page') ?? '1';
 
@@ -33,7 +36,12 @@ export async function GET(req: NextRequest) {
 
     if (!res.ok) {
       return Response.json(
-        { error: { code: 'UPSTREAM_ERROR', message: '주소 검색 서비스 응답 오류' } },
+        {
+          error: {
+            code: 'UPSTREAM_ERROR',
+            message: '주소 검색 서비스 응답 오류',
+          },
+        },
         { status: 502 },
       );
     }
@@ -75,5 +83,50 @@ export async function GET(req: NextRequest) {
       { error: { code: 'NETWORK_ERROR', message: '주소 검색 중 오류 발생' } },
       { status: 500 },
     );
+  }
+}
+
+async function searchVWorldParcels(keyword: string) {
+  const key = process.env.VWORLD_API_KEY;
+  if (!key) return [];
+  try {
+    const params = new URLSearchParams({
+      service: 'search',
+      request: 'search',
+      version: '2.0',
+      crs: 'EPSG:4326',
+      size: '10',
+      page: '1',
+      query: keyword,
+      type: 'address',
+      category: 'parcel',
+      format: 'json',
+      key,
+    });
+    if (process.env.VWORLD_DOMAIN)
+      params.set('domain', process.env.VWORLD_DOMAIN);
+    const res = await fetch(`https://api.vworld.kr/req/search?${params}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    const json = await res.json();
+    const items = json?.response?.result?.items ?? [];
+    return items
+      .map((item: Record<string, unknown>) => {
+        const address = item.address as Record<string, string> | undefined;
+        return {
+          roadAddress: address?.road ?? '',
+          jibunAddress: address?.parcel ?? '',
+          zipCode: address?.zipcode ?? '',
+          buildingName: address?.bldnm ?? '',
+          siNm: '',
+          sggNm: '',
+          emdNm: '',
+          pnuCode: typeof item.id === 'string' ? item.id : '',
+          isParcelQuery: true,
+        };
+      })
+      .filter((item: { jibunAddress: string }) => item.jibunAddress);
+  } catch {
+    return [];
   }
 }

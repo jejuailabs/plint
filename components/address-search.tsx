@@ -17,6 +17,7 @@ export type AddressResult = {
   siNm: string;
   sggNm: string;
   emdNm: string;
+  pnuCode?: string;
   isDirectParcelQuery?: boolean;
 };
 
@@ -80,8 +81,19 @@ export function AddressSearch({
       setIsOpen(nextResults.length > 0);
       setActiveIndex(-1);
     } catch {
-      setResults([]);
-      setIsOpen(false);
+      setResults([
+        {
+          roadAddress: '',
+          jibunAddress: keyword.trim(),
+          zipCode: '',
+          buildingName: '',
+          siNm: '',
+          sggNm: '',
+          emdNm: '',
+          isDirectParcelQuery: true,
+        },
+      ]);
+      setIsOpen(true);
     } finally {
       setLoading(false);
     }

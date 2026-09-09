@@ -84,6 +84,17 @@ export function createJusoAddressConnector(): Connector<
     manifest,
 
     async execute(input, signal) {
+      const exactParcel = await findParcelWithVWorld(input.address, signal);
+      if (exactParcel) {
+        return {
+          data: exactParcel,
+          rawSnapshotId: `vworld-parcel-search-${Date.now()}`,
+          observedAt: new Date().toISOString(),
+          warnings: [
+            'VWorld 필지 검색에서 정확 지번과 PNU를 우선 사용했습니다.',
+          ],
+        };
+      }
       const apiKey = process.env.JUSO_API_KEY;
       if (!apiKey) {
         return emptyResult('JUSO_API_KEY is not configured');
@@ -232,6 +243,72 @@ export function createJusoAddressConnector(): Connector<
       }
     },
   };
+}
+
+async function findParcelWithVWorld(
+  address: string,
+  signal?: AbortSignal,
+): Promise<JusoAddressOutput | null> {
+  const key = process.env.VWORLD_API_KEY;
+  if (!key) return null;
+  try {
+    const url = new URL('https://api.vworld.kr/req/search');
+    for (const [name, value] of Object.entries({
+      service: 'search',
+      request: 'search',
+      version: '2.0',
+      crs: 'EPSG:4326',
+      size: '20',
+      page: '1',
+      query: address,
+      type: 'address',
+      category: 'parcel',
+      format: 'json',
+      key,
+    }))
+      url.searchParams.set(name, value);
+    if (process.env.VWORLD_DOMAIN)
+      url.searchParams.set('domain', process.env.VWORLD_DOMAIN);
+    const raw = await fetchWithRetry<{
+      response?: {
+        result?: {
+          items?: Array<{
+            id?: string;
+            address?: {
+              parcel?: string;
+              road?: string;
+              zipcode?: string;
+              bldnm?: string;
+            };
+            point?: { x?: string; y?: string };
+          }>;
+        };
+      };
+    }>(url.toString(), { timeoutMs: 5000, signal });
+    const normalized = address.replace(/\s+/g, '');
+    const item = raw.response?.result?.items?.find((candidate) =>
+      candidate.address?.parcel?.replace(/\s+/g, '').endsWith(normalized),
+    );
+    const pnu = item?.id ?? '';
+    const lon = Number(item?.point?.x);
+    const lat = Number(item?.point?.y);
+    if (!/^\d{19}$/.test(pnu) || !Number.isFinite(lon) || !Number.isFinite(lat))
+      return null;
+    return {
+      pnuCode: pnu,
+      jibunAddress: item?.address?.parcel ?? address,
+      roadAddress: item?.address?.road ?? '',
+      latitude: lat,
+      longitude: lon,
+      administrativeCode: pnu.slice(0, 10),
+      postalCode: item?.address?.zipcode || undefined,
+      buildingName: item?.address?.bldnm || undefined,
+      detailedBuildingNames: [],
+      sourceCoordinate: { x: lon, y: lat, coordinateSystem: 'EPSG:4326' },
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function resolveParcelWithVWorld(
