@@ -90,6 +90,14 @@ export type DevelopmentScenario = {
   estimatedRevenueKrw: number;
   estimatedCostKrw: number;
   estimatedProfitRatePercent: number;
+  financialModel?: {
+    type: 'sale' | 'rental';
+    salePricePerSqm?: number;
+    monthlyRentPerSqm?: number;
+    occupancyPercent?: number;
+    operatingExpensePercent?: number;
+    annualNetOperatingIncomeKrw?: number;
+  };
   massing?: import('@/lib/pipeline/massing').MassPlacement;
   isPreliminaryOnly: true;
 };

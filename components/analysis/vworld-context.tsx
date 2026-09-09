@@ -44,6 +44,7 @@ export function VWorldContext(props: CesiumContextProps) {
           },
           boundary: props.boundary,
           scenario: props.scenario,
+          context: props.context,
         },
       },
       location.origin,
@@ -54,6 +55,7 @@ export function VWorldContext(props: CesiumContextProps) {
     props.center.longitude,
     props.boundary,
     props.scenario,
+    props.context,
   ]);
   useEffect(() => {
     const requests = pending.current;
@@ -76,6 +78,7 @@ export function VWorldContext(props: CesiumContextProps) {
               center: p.center,
               boundary: p.boundary,
               scenario: p.scenario,
+              context: p.context,
             },
           },
           location.origin,

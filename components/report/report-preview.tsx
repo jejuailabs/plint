@@ -797,6 +797,27 @@ export function ReportPreview() {
               <ScenarioCard key={s.id} scenario={s} isRecommended={false} />
             ))}
           </div>
+          {scenario.financialModel && (
+            <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5 print:border-cyan-200 print:bg-cyan-50">
+              <p className="text-[10px] font-semibold tracking-[0.2em] text-cyan-300 print:text-cyan-700">
+                사업성 시뮬레이션 가정
+              </p>
+              <p className="mt-2 text-sm font-medium text-slate-100 print:text-slate-800">
+                {scenario.financialModel.type === 'sale'
+                  ? '분양·매각 모델'
+                  : '임대 운영 모델'}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-slate-400 print:text-slate-600">
+                {scenario.financialModel.type === 'sale'
+                  ? `입력 단가 ${scenario.financialModel.salePricePerSqm?.toLocaleString('ko-KR') ?? 0}원/㎡ × 연면적 ${scenario.grossFloorAreaSqm.toLocaleString('ko-KR')}㎡`
+                  : `월 임대료 ${scenario.financialModel.monthlyRentPerSqm?.toLocaleString('ko-KR') ?? 0}원/㎡ · 가동률 ${scenario.financialModel.occupancyPercent ?? 0}% · 운영비율 ${scenario.financialModel.operatingExpensePercent ?? 0}%`}
+              </p>
+              <p className="mt-2 text-[11px] text-slate-500 print:text-slate-500">
+                사용자 입력 가정이며 공시지가·토지 실거래가를 신축 분양가 또는
+                임대료로 자동 환산하지 않았습니다.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Revenue comparison bar chart */}

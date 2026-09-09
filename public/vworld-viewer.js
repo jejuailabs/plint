@@ -19,6 +19,7 @@
     }catch{/* Elevation remains explicitly unverified. */}
     if(current!==generation)return;
     if(data.boundary) viewer.entities.add({name:'대상 필지 경계',polygon:{hierarchy:new C.PolygonHierarchy(C.Cartesian3.fromDegreesArray(data.boundary.coordinates[0].flat()),data.boundary.coordinates.slice(1).map(r=>new C.PolygonHierarchy(C.Cartesian3.fromDegreesArray(r.flat())))),material:C.Color.YELLOW.withAlpha(0.12),outline:true,outlineColor:C.Color.YELLOW}});
+    (data.context||[]).forEach((building)=>{const ring=building?.footprint?.coordinates?.[0];const height=Number(building?.heightM?.value);if(!ring||ring.length<4||!Number.isFinite(height)||height<=0)return;viewer.entities.add({name:'주변 기존 건물 (추정 높이)',polygon:{hierarchy:C.Cartesian3.fromDegreesArray(ring.flat()),height:ground,extrudedHeight:ground+height,material:C.Color.fromCssColorString('#668db2').withAlpha(0.48),outline:true,outlineColor:C.Color.fromCssColorString('#8eb6d6').withAlpha(0.35)}});});
     if(p){let height=ground;const area=p.widthM*p.depthM;
       data.scenario.floors.forEach((floor,i)=>{const scale=Math.sqrt((p.floorAreasSqm[i]||0)/area);if(!scale)return;
         const ring=p.footprint.coordinates[0].map(([lon,lat])=>[p.center.longitude+(lon-p.center.longitude)*scale,p.center.latitude+(lat-p.center.latitude)*scale]);
@@ -29,7 +30,7 @@
     viewer.camera.lookAt(target,new C.HeadingPitchRange(C.Math.toRadians(330),C.Math.toRadians(-40),280));
     viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
     viewer.scene.requestRender();
-    notice.textContent='VWorld 3D · 제안 매스는 규제 미검증 · 배경 기존 건물은 현황 자료';
+    notice.textContent=(data.context||[]).length?'VWorld 3D · 제안 매스와 확보된 주변 건물 높이 · 높이 미확보 건물은 영상으로 표시':'VWorld 3D · 제안 매스 · 주변 건물 높이 데이터 미확보';
     send({type:'ready'});
   }
   function moveCamera(headingDelta,pitchDelta,rangeDelta){

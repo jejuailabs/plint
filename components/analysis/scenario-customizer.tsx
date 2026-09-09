@@ -15,6 +15,11 @@ type CustomParams = {
   typicalFloorHeightM: number;
   groundFloorHeightM: number;
   constructionCostPerSqm: number;
+  financialModel: 'sale' | 'rental';
+  salePricePerSqm: number;
+  monthlyRentPerSqm: number;
+  occupancyPercent: number;
+  operatingExpensePercent: number;
 };
 
 type Props = {
@@ -32,8 +37,8 @@ const DEFAULT_CONSTRUCTION_COST = 3_250_000;
 function buildCustomScenario(
   areaSqm: number,
   params: CustomParams,
-  comparablePricePerSqm: number,
-  landPricePerSqm: number,
+  _comparablePricePerSqm: number,
+  _landPricePerSqm: number,
 ): DevelopmentScenario {
   const footprintSqm = areaSqm * (params.coveragePercent / 100);
   const grossFloorAreaSqm = Math.min(
@@ -48,13 +53,32 @@ function buildCustomScenario(
     heightM: i === 0 ? params.groundFloorHeightM : params.typicalFloorHeightM,
   }));
 
-  const estimatedRevenueKrw = 0;
-  void comparablePricePerSqm;
-  void landPricePerSqm;
   const estimatedCostKrw = Math.round(
     grossFloorAreaSqm * params.constructionCostPerSqm,
   );
-  const estimatedProfitRatePercent = 0;
+  const annualGrossRentKrw = Math.round(
+    grossFloorAreaSqm *
+      params.monthlyRentPerSqm *
+      12 *
+      (params.occupancyPercent / 100),
+  );
+  const annualNetOperatingIncomeKrw = Math.round(
+    annualGrossRentKrw * (1 - params.operatingExpensePercent / 100),
+  );
+  const estimatedRevenueKrw =
+    params.financialModel === 'sale'
+      ? Math.round(grossFloorAreaSqm * params.salePricePerSqm)
+      : annualNetOperatingIncomeKrw;
+  const estimatedProfitRatePercent =
+    estimatedRevenueKrw > 0 && estimatedCostKrw > 0
+      ? Number(
+          (params.financialModel === 'sale'
+            ? ((estimatedRevenueKrw - estimatedCostKrw) / estimatedCostKrw) *
+              100
+            : (estimatedRevenueKrw / estimatedCostKrw) * 100
+          ).toFixed(1),
+        )
+      : 0;
 
   return {
     id: 'custom',
@@ -69,6 +93,23 @@ function buildCustomScenario(
     estimatedRevenueKrw,
     estimatedCostKrw,
     estimatedProfitRatePercent,
+    financialModel: {
+      type: params.financialModel,
+      salePricePerSqm: params.salePricePerSqm || undefined,
+      monthlyRentPerSqm: params.monthlyRentPerSqm || undefined,
+      occupancyPercent:
+        params.financialModel === 'rental'
+          ? params.occupancyPercent
+          : undefined,
+      operatingExpensePercent:
+        params.financialModel === 'rental'
+          ? params.operatingExpensePercent
+          : undefined,
+      annualNetOperatingIncomeKrw:
+        params.financialModel === 'rental'
+          ? annualNetOperatingIncomeKrw
+          : undefined,
+    },
     isPreliminaryOnly: true,
   };
 }
@@ -162,6 +203,11 @@ export function ScenarioCustomizer({
     typicalFloorHeightM: 3.3,
     groundFloorHeightM: 4.0,
     constructionCostPerSqm: DEFAULT_CONSTRUCTION_COST,
+    financialModel: 'sale',
+    salePricePerSqm: 0,
+    monthlyRentPerSqm: 0,
+    occupancyPercent: 90,
+    operatingExpensePercent: 25,
   });
 
   const maxFloors = useMemo(() => {
@@ -281,6 +327,66 @@ export function ScenarioCustomizer({
           step={50_000}
           onChange={(v) => update({ constructionCostPerSqm: v })}
         />
+        <div className="space-y-2 border-t border-white/8 pt-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-300">수익 모델</span>
+            <select
+              value={params.financialModel}
+              onChange={(event) =>
+                update({
+                  financialModel: event.target.value as 'sale' | 'rental',
+                })
+              }
+              className="rounded border border-slate-600/50 bg-slate-800/60 px-2 py-1 text-xs text-slate-200 outline-none focus:border-cyan-400/50"
+            >
+              <option value="sale">분양·매각</option>
+              <option value="rental">임대 운영</option>
+            </select>
+          </div>
+          {params.financialModel === 'sale' ? (
+            <SliderRow
+              label="예상 분양·매각 단가"
+              unit="원/㎡"
+              value={params.salePricePerSqm}
+              min={0}
+              max={20_000_000}
+              step={100_000}
+              onChange={(v) => update({ salePricePerSqm: v })}
+            />
+          ) : (
+            <>
+              <SliderRow
+                label="월 임대료"
+                unit="원/㎡"
+                value={params.monthlyRentPerSqm}
+                min={0}
+                max={100_000}
+                step={1_000}
+                onChange={(v) => update({ monthlyRentPerSqm: v })}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <SliderRow
+                  label="가동률"
+                  unit="%"
+                  value={params.occupancyPercent}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) => update({ occupancyPercent: v })}
+                />
+                <SliderRow
+                  label="운영비율"
+                  unit="%"
+                  value={params.operatingExpensePercent}
+                  min={0}
+                  max={80}
+                  step={1}
+                  onChange={(v) => update({ operatingExpensePercent: v })}
+                />
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2 rounded-lg border border-white/8 bg-black/20 p-3">
@@ -297,11 +403,13 @@ export function ScenarioCustomizer({
           </span>
         </div>
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500">예상 매출</span>
+          <span className="text-slate-500">
+            {params.financialModel === 'sale' ? '예상 매출' : '연간 순영업수익'}
+          </span>
           <span className="font-medium text-slate-200">
             {displayScenario.estimatedRevenueKrw > 0
               ? formatKrw(displayScenario.estimatedRevenueKrw) + '원'
-              : '미산정'}
+              : '가정 입력 필요'}
           </span>
         </div>
         <div className="flex items-center justify-between text-xs">
@@ -311,20 +419,25 @@ export function ScenarioCustomizer({
           </span>
         </div>
         <div className="flex items-center justify-between border-t border-white/8 pt-2 text-xs">
-          <span className="text-slate-400">개략 수익률</span>
+          <span className="text-slate-400">
+            {params.financialModel === 'sale'
+              ? '개략 투자수익률'
+              : '개략 연 NOI 수익률'}
+          </span>
           <span
             className={`text-base font-semibold ${displayScenario.estimatedProfitRatePercent >= 0 ? 'text-lime-200' : 'text-rose-300'}`}
           >
             {displayScenario.estimatedRevenueKrw > 0
               ? `${displayScenario.estimatedProfitRatePercent}%`
-              : '미산정'}
+              : '가정 입력 필요'}
           </span>
         </div>
       </div>
 
       <p className="text-[9px] text-slate-600">
         조정값은 법정 한도가 아닙니다. 규제·주차·이격은 별도 검증해야 하며
-        매출/수익률은 수익 모델 입력 전 미산정입니다.
+        분양·매각 단가와 임대료는 사용자가 입력한 가정입니다.
+        토지비·설계·금융·세금·공실 손실·임대차 조건은 별도 검토가 필요합니다.
       </p>
     </div>
   );
