@@ -106,6 +106,7 @@ export function AnalysisWorkspace() {
   const [message, setMessage] = useState('');
   const [zoom, setZoom] = useState(100);
   const [sceneMode, setSceneMode] = useState<'massing' | 'context'>('massing');
+  const [hasOpenedContext, setHasOpenedContext] = useState(false);
   const [saveStatus, setSaveStatus] = useState<
     'idle' | 'saving' | 'saved' | 'error'
   >('idle');
@@ -161,6 +162,8 @@ export function AnalysisWorkspace() {
       const signal = controller.signal;
       setProgress({});
       setResult(null);
+      setSceneMode('massing');
+      setHasOpenedContext(false);
       blenderPoll.current++;
       setBlenderJobId(null);
       setStatus('loading');
@@ -906,35 +909,48 @@ export function AnalysisWorkspace() {
 
             <section className="analysis-scene-frame min-h-[620px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/30">
               <div className="relative h-[520px] xl:h-[calc(100vh-205px)] xl:min-h-[620px]">
-                {scenario && sceneMode === 'massing' ? (
-                  <LazyAnalysisScene
-                    address={address}
-                    center={
-                      result.data.identity.center.value ?? {
-                        latitude: 0,
-                        longitude: 0,
-                      }
-                    }
-                    boundary={result.data.geometry.boundary}
-                    areaSqm={result.data.geometry.areaSqm.value ?? 500}
-                    scenario={scenario}
-                    context={result.data.context}
-                  />
-                ) : scenario ? (
-                  <LazyCesiumContext
-                    address={address}
-                    center={
-                      result.data.identity.center.value ?? {
-                        latitude: 0,
-                        longitude: 0,
-                      }
-                    }
-                    areaSqm={result.data.geometry.areaSqm.value ?? undefined}
-                    scenario={scenario}
-                    boundary={result.data.geometry.boundary.value}
-                    context={result.data.context}
-                    glbDataUrl={blenderGlb}
-                  />
+                {scenario ? (
+                  <>
+                    <div
+                      className={`absolute inset-0 transition-opacity ${sceneMode === 'massing' ? 'z-[1] opacity-100' : 'pointer-events-none z-0 opacity-0'}`}
+                    >
+                      <LazyAnalysisScene
+                        address={address}
+                        center={
+                          result.data.identity.center.value ?? {
+                            latitude: 0,
+                            longitude: 0,
+                          }
+                        }
+                        boundary={result.data.geometry.boundary}
+                        areaSqm={result.data.geometry.areaSqm.value ?? 500}
+                        scenario={scenario}
+                        context={result.data.context}
+                      />
+                    </div>
+                    {hasOpenedContext && (
+                      <div
+                        className={`absolute inset-0 transition-opacity ${sceneMode === 'context' ? 'z-[1] opacity-100' : 'pointer-events-none z-0 opacity-0'}`}
+                      >
+                        <LazyCesiumContext
+                          address={address}
+                          center={
+                            result.data.identity.center.value ?? {
+                              latitude: 0,
+                              longitude: 0,
+                            }
+                          }
+                          areaSqm={
+                            result.data.geometry.areaSqm.value ?? undefined
+                          }
+                          scenario={scenario}
+                          boundary={result.data.geometry.boundary.value}
+                          context={result.data.context}
+                          glbDataUrl={blenderGlb}
+                        />
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="grid h-full place-items-center px-8 text-center">
                     <div className="max-w-sm rounded-2xl border border-amber-300/20 bg-slate-950/75 p-6 backdrop-blur">
@@ -978,7 +994,10 @@ export function AnalysisWorkspace() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSceneMode('context')}
+                    onClick={() => {
+                      setHasOpenedContext(true);
+                      setSceneMode('context');
+                    }}
                     disabled={!scenario}
                     className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition ${sceneMode === 'context' ? 'bg-cyan-300 text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                   >
