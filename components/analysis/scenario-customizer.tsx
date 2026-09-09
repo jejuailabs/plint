@@ -7,6 +7,7 @@ import type {
   DevelopmentScenario,
   MassFloor,
 } from '@/lib/domain/parcel-intelligence';
+import type { MassPlacement } from '@/lib/pipeline/massing';
 
 type CustomParams = {
   coveragePercent: number;
@@ -30,6 +31,8 @@ type Props = {
   comparablePricePerSqm: number;
   landPricePerSqm: number;
   onScenarioChange: (scenario: DevelopmentScenario) => void;
+  placement?: MassPlacement | null;
+  onPlacementChange?: (placement: MassPlacement) => void;
 };
 
 const DEFAULT_CONSTRUCTION_COST = 3_250_000;
@@ -181,6 +184,42 @@ function formatKrw(value: number) {
   return `${value.toLocaleString('ko-KR')}`;
 }
 
+function movePlacement(
+  placement: MassPlacement,
+  eastM: number,
+  northM: number,
+  rotationDeltaDeg: number,
+): MassPlacement {
+  const metersPerDegree = 111_320;
+  const latitude = placement.center.latitude;
+  const cos = Math.cos((latitude * Math.PI) / 180);
+  const nextCenter = {
+    longitude: placement.center.longitude + eastM / (metersPerDegree * cos),
+    latitude: placement.center.latitude + northM / metersPerDegree,
+  };
+  const angle = (rotationDeltaDeg * Math.PI) / 180;
+  const ring = placement.footprint.coordinates[0].map(([lon, lat]) => {
+    const x = (lon - placement.center.longitude) * metersPerDegree * cos;
+    const y = (lat - placement.center.latitude) * metersPerDegree;
+    const rotatedX = x * Math.cos(angle) - y * Math.sin(angle);
+    const rotatedY = x * Math.sin(angle) + y * Math.cos(angle);
+    return [
+      nextCenter.longitude + rotatedX / (metersPerDegree * cos),
+      nextCenter.latitude + rotatedY / metersPerDegree,
+    ] as [number, number];
+  });
+  return {
+    ...placement,
+    center: nextCenter,
+    rotationRad: placement.rotationRad + angle,
+    footprint: { ...placement.footprint, coordinates: [ring] },
+    notes: [
+      ...placement.notes,
+      '사용자 배치 편집값 적용 · 경계·이격·주차 별도 검토 필요',
+    ],
+  };
+}
+
 export function ScenarioCustomizer({
   areaSqm,
   appliedScenario,
@@ -189,6 +228,8 @@ export function ScenarioCustomizer({
   comparablePricePerSqm,
   landPricePerSqm,
   onScenarioChange,
+  placement,
+  onPlacementChange,
 }: Props) {
   const defaultFloors = useMemo(() => {
     const footprint = areaSqm * (maxCoverage / 100);
@@ -209,6 +250,10 @@ export function ScenarioCustomizer({
     occupancyPercent: 90,
     operatingExpensePercent: 25,
   });
+  const [placementEdit, setPlacementEdit] = useState(false);
+  const [eastM, setEastM] = useState(0);
+  const [northM, setNorthM] = useState(0);
+  const [rotationDeg, setRotationDeg] = useState(0);
 
   const maxFloors = useMemo(() => {
     const footprint = areaSqm * (params.coveragePercent / 100);
@@ -387,6 +432,72 @@ export function ScenarioCustomizer({
             </>
           )}
         </div>
+        {placement && onPlacementChange && (
+          <div className="space-y-3 border-t border-white/8 pt-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-cyan-200">
+                배치 편집
+              </span>
+              <button
+                type="button"
+                onClick={() => setPlacementEdit((value) => !value)}
+                className="rounded border border-cyan-300/30 px-2 py-1 text-[10px] text-cyan-200"
+              >
+                {placementEdit ? '편집 중' : '배치 이동'}
+              </button>
+            </div>
+            {placementEdit && (
+              <>
+                <SliderRow
+                  label="동·서 이동"
+                  unit="m"
+                  value={eastM}
+                  min={-80}
+                  max={80}
+                  step={1}
+                  onChange={(value) => {
+                    setEastM(value);
+                    onPlacementChange(
+                      movePlacement(placement, value - eastM, 0, 0),
+                    );
+                  }}
+                />
+                <SliderRow
+                  label="남·북 이동"
+                  unit="m"
+                  value={northM}
+                  min={-80}
+                  max={80}
+                  step={1}
+                  onChange={(value) => {
+                    setNorthM(value);
+                    onPlacementChange(
+                      movePlacement(placement, 0, value - northM, 0),
+                    );
+                  }}
+                />
+                <SliderRow
+                  label="배치 회전"
+                  unit="°"
+                  value={rotationDeg}
+                  min={-180}
+                  max={180}
+                  step={5}
+                  onChange={(value) => {
+                    setRotationDeg(value);
+                    onPlacementChange(
+                      movePlacement(placement, 0, 0, value - rotationDeg),
+                    );
+                  }}
+                />
+                <p className="text-[9px] leading-4 text-slate-500">
+                  자동 배치안에서 이동·회전한 값입니다. 경계 밖 배치와
+                  이격·주차는 보고서 전 별도 검토가 필요합니다.
+                </p>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-2 rounded-lg border border-white/8 bg-black/20 p-3">

@@ -47,7 +47,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/theme-toggle';
 import Image from 'next/image';
-import { placeMassing } from '@/lib/pipeline/massing';
+import { placeMassing, type MassPlacement } from '@/lib/pipeline/massing';
 import type {
   AnalysisPreviewResponse,
   DevelopmentScenario,
@@ -136,6 +136,15 @@ export function AnalysisWorkspace() {
   const [showBlenderModel, setShowBlenderModel] = useState(false);
   const [customScenario, setCustomScenario] =
     useState<DevelopmentScenario | null>(null);
+  const [placementOverride, setPlacementOverride] =
+    useState<MassPlacement | null>(null);
+  const handleCustomScenarioChange = useCallback(
+    (nextScenario: DevelopmentScenario) => {
+      setPlacementOverride(null);
+      setCustomScenario(nextScenario);
+    },
+    [],
+  );
 
   const setWorkspaceZoom = useCallback((nextZoom: number) => {
     setZoom(Math.min(140, Math.max(80, nextZoom)));
@@ -371,11 +380,9 @@ export function AnalysisWorkspace() {
     if (!baseScenario || baseScenario.id !== 'custom' || !result)
       return baseScenario;
     const area = result.data.geometry.areaSqm.value ?? 0;
-    const massing = placeMassing(
-      result.data.geometry.boundary.value,
-      area,
-      baseScenario,
-    );
+    const massing =
+      placementOverride ??
+      placeMassing(result.data.geometry.boundary.value, area, baseScenario);
     if (!massing) return baseScenario;
     const gross = Math.round(massing.floorAreasSqm.reduce((a, b) => a + b, 0));
     const unit =
@@ -390,7 +397,7 @@ export function AnalysisWorkspace() {
         Math.round(((massing.widthM * massing.depthM) / area) * 1000) / 10,
       estimatedCostKrw: Math.round(gross * unit),
     };
-  }, [baseScenario, result]);
+  }, [baseScenario, result, placementOverride]);
 
   const legalLimits = useMemo(() => {
     if (!result) return { maxCoverage: 60, maxFar: 200 };
@@ -1063,7 +1070,9 @@ export function AnalysisWorkspace() {
                   landPricePerSqm={
                     result.data.market.officialLandPricePerSqm.value ?? 0
                   }
-                  onScenarioChange={setCustomScenario}
+                  placement={scenario.massing}
+                  onScenarioChange={handleCustomScenarioChange}
+                  onPlacementChange={setPlacementOverride}
                 />
               ) : scenario ? (
                 <Card className="border border-lime-300/15 bg-lime-300/[0.045] text-white">
