@@ -61,22 +61,23 @@ export function AddressSearch({
       if (!res.ok) throw new Error();
       const data = await res.json();
       const found = data.results ?? [];
+      const normalizedQuery = keyword.replace(/\s+/g, '');
+      const hasExactParcel = found.some((result: AddressResult) =>
+        result.jibunAddress.replace(/\s+/g, '').endsWith(normalizedQuery),
+      );
+      const directParcel = {
+        roadAddress: '',
+        jibunAddress: keyword.trim(),
+        zipCode: '',
+        buildingName: '',
+        siNm: '',
+        sggNm: '',
+        emdNm: '',
+        isDirectParcelQuery: true,
+      };
       // A vacant parcel often has no road-name/building address. Keep the
       // entered 지번 as a selectable parcel lookup rather than blocking it.
-      const nextResults = found.length
-        ? found
-        : [
-            {
-              roadAddress: '',
-              jibunAddress: keyword.trim(),
-              zipCode: '',
-              buildingName: '',
-              siNm: '',
-              sggNm: '',
-              emdNm: '',
-              isDirectParcelQuery: true,
-            },
-          ];
+      const nextResults = hasExactParcel ? found : [directParcel, ...found];
       setResults(nextResults);
       setIsOpen(nextResults.length > 0);
       setActiveIndex(-1);

@@ -103,8 +103,6 @@ async function searchVWorldParcels(keyword: string) {
       format: 'json',
       key,
     });
-    if (process.env.VWORLD_DOMAIN)
-      params.set('domain', process.env.VWORLD_DOMAIN);
     const res = await fetch(`https://api.vworld.kr/req/search?${params}`, {
       signal: AbortSignal.timeout(5000),
     });

@@ -267,8 +267,6 @@ async function findParcelWithVWorld(
       key,
     }))
       url.searchParams.set(name, value);
-    if (process.env.VWORLD_DOMAIN)
-      url.searchParams.set('domain', process.env.VWORLD_DOMAIN);
     const raw = await fetchWithRetry<{
       response?: {
         result?: {
