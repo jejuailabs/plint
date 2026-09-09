@@ -4,6 +4,7 @@ import { runPreviewAnalysis } from '@/lib/pipeline/preview';
 import type { AnalysisEvent } from '@/lib/pipeline/progress';
 
 export const maxDuration = 120;
+export const runtime = 'edge';
 // VWorld's public spatial APIs are intended for domestic access. Keeping this
 // route in Seoul prevents a US default function region from losing all parcel
 // geometry while the rest of the analysis still succeeds.
