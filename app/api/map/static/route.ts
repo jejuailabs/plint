@@ -1,5 +1,8 @@
 import { NextRequest } from 'next/server';
 
+// VWorld can reject requests issued from Vercel's US default region.
+export const preferredRegion = 'icn1';
+
 export async function GET(req: NextRequest) {
   const lat = req.nextUrl.searchParams.get('lat');
   const lon = req.nextUrl.searchParams.get('lon');
