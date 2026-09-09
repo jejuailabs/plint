@@ -1017,7 +1017,7 @@ export function AnalysisWorkspace() {
                   </button>
                 </div>
                 {scenario && (
-                  <div className="absolute bottom-5 left-5 right-5 flex gap-2 overflow-x-auto pb-1">
+                  <div className="absolute bottom-5 left-5 right-5 z-30 flex gap-2 overflow-x-auto pb-1">
                     {result.data.scenarios.map((item) => (
                       <ScenarioButton
                         key={item.id}
