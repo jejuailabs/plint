@@ -221,6 +221,13 @@ function CesiumFallback({
 
         viewer = new Cesium.Viewer(containerRef.current, viewerOptions);
         viewerRef.current = viewer;
+        // The fallback uses one calibrated VWorld image. Keep the camera inside
+        // that image's useful footprint so zooming out cannot stretch it across
+        // the globe and produce raster seams.
+        viewer.scene.screenSpaceCameraController.minimumZoomDistance = 35;
+        viewer.scene.screenSpaceCameraController.maximumZoomDistance = hasIon
+          ? 850
+          : 1_000;
 
         const heightM = Math.max(
           10,
@@ -520,7 +527,7 @@ export function CesiumContext(props: CesiumContextProps) {
       ) : (
         <CesiumFallback {...props} />
       )}
-      <div className="absolute left-3 bottom-12 z-20 flex gap-1 rounded bg-slate-950/90 p-1 text-xs text-white">
+      <div className="absolute left-3 top-16 z-20 flex gap-1 rounded bg-slate-950/90 p-1 text-xs text-white">
         <button
           onClick={() => setProvider('vworld')}
           className={

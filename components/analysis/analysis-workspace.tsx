@@ -28,6 +28,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -51,6 +52,14 @@ import type {
   AnalysisPreviewResponse,
   DevelopmentScenario,
 } from '@/lib/domain/parcel-intelligence';
+
+const LazyBlenderModelViewer = dynamic(
+  () =>
+    import('@/components/analysis/blender-model-viewer').then(
+      (module) => module.BlenderModelViewer,
+    ),
+  { ssr: false },
+);
 
 type SunlightData = {
   winterSolstice: { sunrise: string; sunset: string; daylightHours: number };
@@ -124,6 +133,7 @@ export function AnalysisWorkspace() {
   const [blenderJobId, setBlenderJobId] = useState<string | null>(null);
   const [blenderPreview, setBlenderPreview] = useState<string | null>(null);
   const [blenderGlb, setBlenderGlb] = useState<string | null>(null);
+  const [showBlenderModel, setShowBlenderModel] = useState(false);
   const [customScenario, setCustomScenario] =
     useState<DevelopmentScenario | null>(null);
 
@@ -240,6 +250,7 @@ export function AnalysisWorkspace() {
       setSunlightStatus('idle');
       setBlenderPreview(null);
       setBlenderGlb(null);
+      setShowBlenderModel(false);
       setExportStatus('idle');
       setStatus('loading');
       setMessage('실제 자료를 조회하고 있습니다...');
@@ -1285,6 +1296,24 @@ export function AnalysisWorkspace() {
                       alt="Blender 조감도 렌더링"
                       className="w-full rounded-lg"
                     />
+                    {blenderGlb && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-2 w-full"
+                        onClick={() =>
+                          setShowBlenderModel((current) => !current)
+                        }
+                      >
+                        <Box className="size-4" />
+                        {showBlenderModel ? '3D 모델 닫기' : '3D 모델 조작하기'}
+                      </Button>
+                    )}
+                    {blenderGlb && showBlenderModel && (
+                      <div className="mt-2">
+                        <LazyBlenderModelViewer src={blenderGlb} />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
