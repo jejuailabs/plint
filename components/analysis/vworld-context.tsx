@@ -140,7 +140,7 @@ export function VWorldContext(props: CesiumContextProps) {
       />
       <button
         type="button"
-        className="absolute left-3 top-16 rounded bg-slate-950/90 px-3 py-2 text-xs text-white"
+        className="absolute left-3 top-16 z-30 rounded bg-slate-950/90 px-3 py-2 text-xs text-white"
         onClick={() =>
           frame.current?.contentWindow?.postMessage(
             { channel: 'plint-vworld', type: 'focus' },
