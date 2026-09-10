@@ -174,10 +174,12 @@ export async function fetchLiveSourceData(
   const bun = pnu.slice(11, 15);
   const ji = pnu.slice(15, 19);
 
-  // Transaction query: last 6 months for better coverage
+  // Transaction query: previous 12 full months. This supports both current
+  // comparable evidence and a transparent six-month-versus-prior-six-month
+  // trend without treating an incomplete current month as a full period.
   const now = new Date();
   const txMonths: string[] = [];
-  for (let i = 1; i <= 6; i++) {
+  for (let i = 1; i <= 12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     txMonths.push(
       `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`,
@@ -188,7 +190,7 @@ export async function fetchLiveSourceData(
   const lastYear = now.getFullYear() - 1;
   const stnId = ADMIN_TO_STATION[adminCode.slice(0, 2)] ?? '108';
 
-  // Step 3: parallel downstream calls (transactions query 6 months)
+  // Step 3: parallel downstream calls (transactions query 12 months)
   const txConnector = createLandTransactionConnector();
   const lat0 = juso.data.latitude;
   const lon0 = juso.data.longitude;
@@ -262,7 +264,7 @@ export async function fetchLiveSourceData(
   const contextBuildings = unwrapSettled(ctxBldg, '주변 건물 조회 실패');
   const landCharacteristics = unwrapSettled(landChar, '토지특성 조회 실패');
 
-  // Merge 6 months of transactions into a single result
+  // Merge 12 months of transactions into a single result
   const allTxItems: LandTransactionItem[] = [];
   let txSnapshot = `landtx-merged-${Date.now()}`;
   let txObserved = new Date().toISOString();
@@ -293,7 +295,7 @@ export async function fetchLiveSourceData(
           data: txSuccess === txMonths.length ? [] : null,
           rawSnapshotId: txSnapshot,
           observedAt: txObserved,
-          warnings: txWarnings.length ? txWarnings : ['6개월간 거래 내역 없음'],
+          warnings: txWarnings.length ? txWarnings : ['최근 12개월간 거래 내역 없음'],
         };
 
   for (const r of [

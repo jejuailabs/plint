@@ -433,6 +433,26 @@ async function runLivePreview(
     ) ?? [];
   const compMedian = comparable.length ? medianPricePerSqm(comparable) : 0;
   const compCount = comparable.length;
+  const referenceDate = new Date();
+  const sixMonthsAgo = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth() - 6,
+    1,
+  );
+  const recentComparables = comparable.filter((transaction) => {
+    const date = new Date(`${transaction.date}T00:00:00Z`);
+    return Number.isFinite(date.getTime()) && date >= sixMonthsAgo;
+  });
+  const priorComparables = comparable.filter((transaction) => {
+    const date = new Date(`${transaction.date}T00:00:00Z`);
+    return Number.isFinite(date.getTime()) && date < sixMonthsAgo;
+  });
+  const recentMedian = medianPricePerSqm(recentComparables);
+  const priorMedian = medianPricePerSqm(priorComparables);
+  const trendPercent =
+    recentMedian > 0 && priorMedian > 0
+      ? Number((((recentMedian - priorMedian) / priorMedian) * 100).toFixed(1))
+      : null;
 
   // Determine zoning limits from land-use-plan or fallback
   const { buildingCoverageLimit, floorAreaRatioLimit } = zoningLimits(
@@ -638,16 +658,35 @@ async function runLivePreview(
         ev('land-transactions', src.transactions, 'derived'),
         {
           derivation:
-            'comparable-median:v2:same-legal-neighborhood,land-category,zoning,last-six-months',
+            'comparable-median:v3:same-legal-neighborhood,land-category,zoning,last-twelve-full-months',
         },
       ),
       comparableCount: fact(
         compCount,
         ev('land-transactions', src.transactions),
       ),
-      trendPercent: fact<number>(null, [], {
-        warnings: ['복수 월 거래 데이터 비교 전 추세 산출 불가'],
-      }),
+      trendPercent: fact(
+        trendPercent,
+        trendPercent != null
+          ? ev('land-transactions', src.transactions, 'derived')
+          : [],
+        trendPercent != null
+          ? {
+              derivation:
+                'comparable-trend:v1:recent-six-full-months-vs-prior-six-full-months',
+              warnings:
+                recentComparables.length < 2 || priorComparables.length < 2
+                  ? [
+                      `표본 수가 적습니다(최근 6개월 ${recentComparables.length}건 · 이전 6개월 ${priorComparables.length}건). 추세는 참고용입니다.`,
+                    ]
+                  : [],
+            }
+          : {
+              warnings: [
+                `12개월 조회 결과 동일 조건 비교 표본이 부족합니다(최근 6개월 ${recentComparables.length}건 · 이전 6개월 ${priorComparables.length}건).`,
+              ],
+            },
+      ),
     },
 
     // -- demand (SGIS not connected) -----------------------------------------
@@ -802,8 +841,10 @@ async function runLivePreview(
         ]
       : []),
     '침수·국가유산·지하안전·인구/수요는 전용 조회 미구현입니다. 데이터가 없다는 사실을 위험 없음으로 해석하지 않습니다.',
-    '비교 표본은 최근 6개월 동일 법정동·지목·용도지역 토지 거래입니다. 해안 접근성·면적·도로 조건에 따른 보정은 미적용입니다.',
-    '12개월 가격 추세는 동일 조건의 시계열 표본 집계 미구현으로 제공하지 않습니다.',
+    '비교 표본은 최근 12개월 동일 법정동·지목·용도지역 토지 거래입니다. 해안 접근성·면적·도로 조건에 따른 보정은 미적용입니다.',
+    trendPercent == null
+      ? '12개월 가격 추세는 동일 조건의 시계열 표본이 부족해 제공하지 않습니다.'
+      : `12개월 가격 추세는 최근 6개월과 이전 6개월의 동일 조건 표본 중앙값 비교입니다(최근 ${recentComparables.length}건 · 이전 ${priorComparables.length}건).`,
   ];
   const data: ParcelIntelligence = {
     ...partial,
