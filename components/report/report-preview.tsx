@@ -766,6 +766,41 @@ export function ReportPreview() {
           </div>
         </div>
 
+        <div className="mt-5 rounded-2xl border border-white/[0.06] bg-[#0b1828] p-6 print:border-slate-200 print:bg-white">
+          <p className="text-[10px] font-semibold tracking-[0.2em] text-cyan-300/70 print:text-cyan-700">
+            생활권 수요 · ADMINISTRATIVE-DONG CENSUS
+          </p>
+          <p className="mt-2 text-sm font-medium text-slate-100 print:text-slate-800">
+            {data.demand.administrativeArea.value ?? '행정동 통계 미연결'}
+          </p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <MarketMetric
+              label="인구"
+              value={data.demand.populationAdministrativeArea.value}
+              unit="명"
+              fact={data.demand.populationAdministrativeArea as Fact<unknown>}
+              description="기준 행정동 집계"
+            />
+            <MarketMetric
+              label="가구"
+              value={data.demand.householdsAdministrativeArea.value}
+              unit="가구"
+              fact={data.demand.householdsAdministrativeArea as Fact<unknown>}
+              description="기준 행정동 집계"
+            />
+            <MarketMetric
+              label="사업체"
+              value={data.demand.businessesAdministrativeArea.value}
+              unit="개"
+              fact={data.demand.businessesAdministrativeArea as Fact<unknown>}
+              description="기준 행정동 집계"
+            />
+          </div>
+          <p className="mt-4 text-[11px] text-slate-500 print:text-slate-600">
+            이 수치는 대상 필지 반경 500m·1km 수요가 아닌 행정동 단위 센서스입니다.
+          </p>
+        </div>
+
         {/* ══════════════════════════════════════════════════════════ */}
         {/* SECTION 4 — SCENARIOS                                     */}
         {/* ══════════════════════════════════════════════════════════ */}

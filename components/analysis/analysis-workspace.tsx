@@ -25,6 +25,7 @@ import {
   Sparkles,
   Sun,
   TrendingUp,
+  UsersRound,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -1186,6 +1187,47 @@ export function AnalysisWorkspace() {
                         : '미연결'
                     }
                   />
+                </CardContent>
+              </Card>
+
+              <Card className="border border-white/8 bg-white/[0.035] text-white">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <UsersRound className="size-4 text-cyan-300" />
+                    생활권 수요
+                  </CardTitle>
+                  <p className="text-[11px] text-slate-500">
+                    {result.data.demand.administrativeArea.value ?? '행정동 통계 미연결'}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <SummaryRow
+                    label="인구"
+                    value={
+                      result.data.demand.populationAdministrativeArea.value != null
+                        ? `${result.data.demand.populationAdministrativeArea.value.toLocaleString('ko-KR')}명`
+                        : '미연결'
+                    }
+                  />
+                  <SummaryRow
+                    label="가구"
+                    value={
+                      result.data.demand.householdsAdministrativeArea.value != null
+                        ? `${result.data.demand.householdsAdministrativeArea.value.toLocaleString('ko-KR')}가구`
+                        : '미연결'
+                    }
+                  />
+                  <SummaryRow
+                    label="사업체"
+                    value={
+                      result.data.demand.businessesAdministrativeArea.value != null
+                        ? `${result.data.demand.businessesAdministrativeArea.value.toLocaleString('ko-KR')}개`
+                        : '미연결'
+                    }
+                  />
+                  <p className="border-t border-white/8 pt-3 text-[10px] leading-4 text-slate-500">
+                    행정동 센서스 기준이며 필지 반경 수요가 아닙니다.
+                  </p>
                 </CardContent>
               </Card>
 

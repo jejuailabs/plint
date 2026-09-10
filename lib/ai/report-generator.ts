@@ -30,6 +30,7 @@ export function buildPrompt(data: ParcelIntelligence): string {
   const coverage = data.coverage;
   const existing = data.existing;
   const climate = data.climate;
+  const demand = data.demand;
 
   return `당신은 한국 부동산 개발 사전검토 전문가입니다. 아래 필지 데이터를 분석하여 개발 타당성 보고서를 작성해 주세요.
 
@@ -61,6 +62,14 @@ ${existing.length > 0 ? existing.map((b) => `- 용도: ${b.use.value ?? '미확�
 - 실거래 중위가: ${market.comparableMedianPerSqm.value != null ? `${market.comparableMedianPerSqm.value.toLocaleString('ko-KR')}원/㎡` : '미연결'}
 - 실거래 건수: ${market.comparableCount.value ?? 0}건
 - 12개월 추세: ${market.trendPercent.value != null ? `${market.trendPercent.value > 0 ? '+' : ''}${market.trendPercent.value}%` : '미확인'}
+
+## 생활권 수요 (행정동 집계)
+
+- 기준 행정동: ${demand.administrativeArea.value ?? '미확인'}
+- 인구: ${demand.populationAdministrativeArea.value != null ? `${demand.populationAdministrativeArea.value.toLocaleString('ko-KR')}명` : '미연결'}
+- 가구: ${demand.householdsAdministrativeArea.value != null ? `${demand.householdsAdministrativeArea.value.toLocaleString('ko-KR')}가구` : '미연결'}
+- 사업체: ${demand.businessesAdministrativeArea.value != null ? `${demand.businessesAdministrativeArea.value.toLocaleString('ko-KR')}개` : '미연결'}
+- 주의: 이 수치는 행정동 센서스 집계이며 대상 필지 반경 수요가 아닙니다.
 
 ## 기후
 

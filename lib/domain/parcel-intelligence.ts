@@ -53,9 +53,10 @@ export type MarketEvidence = {
 };
 
 export type DemandProfile = {
-  population1km: Fact<number>;
-  households1km: Fact<number>;
-  businesses500m: Fact<number>;
+  populationAdministrativeArea: Fact<number>;
+  householdsAdministrativeArea: Fact<number>;
+  businessesAdministrativeArea: Fact<number>;
+  administrativeArea: Fact<string>;
   transitStops500m: Fact<number>;
 };
 

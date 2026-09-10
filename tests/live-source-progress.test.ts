@@ -11,6 +11,7 @@ const calls = vi.hoisted(() => ({
   cadastral: vi.fn(),
   context: vi.fn(),
   characteristics: vi.fn(),
+  demand: vi.fn(),
 }));
 vi.mock('@/lib/external-apis/connectors/juso-address', () => ({
   createJusoAddressConnector: () => ({ execute: calls.address }),
@@ -40,6 +41,9 @@ vi.mock('@/lib/external-apis/connectors/land-characteristics', () => ({
   createLandCharacteristicsConnector: () => ({
     execute: calls.characteristics,
   }),
+}));
+vi.mock('@/lib/external-apis/connectors/sgis-demand', () => ({
+  createSgisDemandConnector: () => ({ execute: calls.demand }),
 }));
 
 import { fetchLiveSourceData } from '@/lib/pipeline/live-source';
@@ -94,7 +98,7 @@ describe('live source progress wiring', () => {
     expect(
       events.filter((event) => event.step === 'building').at(-1)?.status,
     ).toBe('running');
-    expect(calls.transactions).toHaveBeenCalledTimes(6);
+    expect(calls.transactions).toHaveBeenCalledTimes(12);
     expect(calls.building.mock.calls[0][1]).toBe(signal);
     finish(response({}));
     await pending;

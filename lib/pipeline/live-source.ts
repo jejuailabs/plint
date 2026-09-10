@@ -34,6 +34,8 @@ import { createContextBuildingsConnector } from '@/lib/external-apis/connectors/
 import type { ContextBuildingsOutput } from '@/lib/external-apis/connectors/context-buildings';
 import { createLandCharacteristicsConnector } from '@/lib/external-apis/connectors/land-characteristics';
 import type { LandCharacteristicsOutput } from '@/lib/external-apis/connectors/land-characteristics';
+import { createSgisDemandConnector } from '@/lib/external-apis/connectors/sgis-demand';
+import type { SgisDemandOutput } from '@/lib/external-apis/connectors/sgis-demand';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,6 +51,7 @@ export type LiveSourceData = {
   cadastralBoundary: ConnectorResult<CadastralBoundaryOutput>;
   contextBuildings: ConnectorResult<ContextBuildingsOutput>;
   landCharacteristics: ConnectorResult<LandCharacteristicsOutput>;
+  demand: ConnectorResult<SgisDemandOutput>;
   pnuCode: string | null;
   adminCode: string | null;
   warnings: string[];
@@ -157,6 +160,7 @@ export async function fetchLiveSourceData(
       cadastralBoundary: emptyResult<CadastralBoundaryOutput>(skip),
       contextBuildings: emptyResult<ContextBuildingsOutput>(skip),
       landCharacteristics: emptyResult<LandCharacteristicsOutput>(skip),
+      demand: emptyResult<SgisDemandOutput>(skip),
       pnuCode: null,
       adminCode: null,
       warnings: [
@@ -196,10 +200,10 @@ export async function fetchLiveSourceData(
   const lon0 = juso.data.longitude;
   signal?.throwIfAborted();
   start('building', 1);
-  start('market', 1 + txMonths.length);
+  start('market', 2 + txMonths.length);
   start('planning', 4);
   start('weather', 1);
-  const [bldg, price, wx, lup, cad, ctxBldg, landChar, ...txSettled] =
+  const [bldg, price, wx, lup, cad, ctxBldg, landChar, demandSettled, ...txSettled] =
     await Promise.allSettled([
       track('building', () =>
         createBuildingLedgerConnector().execute(
@@ -246,6 +250,16 @@ export async function fetchLiveSourceData(
       track('planning', () =>
         createLandCharacteristicsConnector().execute({ pnuCode: pnu }, signal),
       ),
+      track('market', () =>
+        lat0 && lon0
+          ? createSgisDemandConnector().execute(
+              { latitude: lat0, longitude: lon0 },
+              signal,
+            )
+          : Promise.resolve(
+              emptyResult<SgisDemandOutput>('좌표 미확인으로 SGIS 수요 조회 불가'),
+            ),
+      ),
       ...txMonths.map((ym) =>
         track('market', () =>
           txConnector.execute(
@@ -263,6 +277,7 @@ export async function fetchLiveSourceData(
   const cadastralBoundary = unwrapSettled(cad, '연속지적도 조회 실패');
   const contextBuildings = unwrapSettled(ctxBldg, '주변 건물 조회 실패');
   const landCharacteristics = unwrapSettled(landChar, '토지특성 조회 실패');
+  const demand = unwrapSettled(demandSettled, 'SGIS 수요 조회 실패');
 
   // Merge 12 months of transactions into a single result
   const allTxItems: LandTransactionItem[] = [];
@@ -307,6 +322,7 @@ export async function fetchLiveSourceData(
     cadastralBoundary,
     contextBuildings,
     landCharacteristics,
+    demand,
   ]) {
     if (!r.data && r.warnings.length) warnings.push(...r.warnings);
   }
@@ -341,6 +357,7 @@ export async function fetchLiveSourceData(
     cadastralBoundary,
     contextBuildings,
     landCharacteristics,
+    demand,
     pnuCode: pnu,
     adminCode,
     warnings,

@@ -227,14 +227,17 @@ async function runMockPreview(
       ),
     },
     demand: {
-      population1km: fact(28_430, [], {
+      populationAdministrativeArea: fact(28_430, [], {
         warnings: ['SGIS 운영 키 연결 전 미리보기 값입니다.'],
       }),
-      households1km: fact(13_240, [], {
+      householdsAdministrativeArea: fact(13_240, [], {
         warnings: ['SGIS 운영 키 연결 전 미리보기 값입니다.'],
       }),
-      businesses500m: fact(1_842, [], {
+      businessesAdministrativeArea: fact(1_842, [], {
         warnings: ['상권 API 연결 전 미리보기 값입니다.'],
+      }),
+      administrativeArea: fact('예시 행정동', [], {
+        warnings: ['SGIS 운영 키 연결 전 미리보기 값입니다.'],
       }),
       transitStops500m: fact(14, [], {
         warnings: ['교통 API 연결 전 미리보기 값입니다.'],
@@ -396,6 +399,7 @@ async function runLivePreview(
   const cadData = src.cadastralBoundary.data;
   const ctxData = src.contextBuildings.data;
   const charData = src.landCharacteristics.data;
+  const demandData = src.demand.data;
 
   // Evidence shorthand — returns [] when the connector produced no data.
   const ev = (
@@ -689,17 +693,40 @@ async function runLivePreview(
       ),
     },
 
-    // -- demand (SGIS not connected) -----------------------------------------
+    // -- demand (from SGIS administrative-dong census) -----------------------
     demand: {
-      population1km: fact<number>(null, [], {
-        warnings: ['SGIS 연결 전 조회 불가'],
-      }),
-      households1km: fact<number>(null, [], {
-        warnings: ['SGIS 연결 전 조회 불가'],
-      }),
-      businesses500m: fact<number>(null, [], {
-        warnings: ['상권 API 연결 전 조회 불가'],
-      }),
+      populationAdministrativeArea: fact(
+        demandData?.population ?? null,
+        demandData?.population != null
+          ? ev('sgis-census', src.demand, 'verified')
+          : [],
+        { warnings: src.demand.warnings },
+      ),
+      householdsAdministrativeArea: fact(
+        demandData?.households ?? null,
+        demandData?.households != null
+          ? ev('sgis-census', src.demand, 'verified')
+          : [],
+        { warnings: src.demand.warnings },
+      ),
+      businessesAdministrativeArea: fact(
+        demandData?.businesses ?? null,
+        demandData?.businesses != null
+          ? ev('sgis-census', src.demand, 'verified')
+          : [],
+        { warnings: src.demand.warnings },
+      ),
+      administrativeArea: fact(
+        demandData?.administrativeDongName ?? null,
+        demandData?.administrativeDongName
+          ? ev('sgis-census', src.demand, 'verified')
+          : [],
+        {
+          warnings: demandData
+            ? [`기준연도 ${demandData.referenceYear}년 행정동 집계입니다.`]
+            : src.demand.warnings,
+        },
+      ),
       transitStops500m: fact<number>(null, [], {
         warnings: ['교통 API 연결 전 조회 불가'],
       }),
@@ -801,6 +828,7 @@ async function runLivePreview(
     ['planning', '토지이용계획', src.landUsePlan],
     ['transactions', '토지 실거래', src.transactions],
     ['weather', 'ASOS 기상', src.weather],
+    ['demand', 'SGIS 생활권 통계', src.demand],
   ] as const;
   const sourceStatus: NonNullable<ParcelIntelligence['sourceStatus']> =
     sources.map(([id, label, r]) => ({
@@ -840,7 +868,10 @@ async function runLivePreview(
           `도로접면 분류: ${charData.roadSideName} · 실제 도로 폭과 법정 접도는 별도 확인합니다.`,
         ]
       : []),
-    '침수·국가유산·지하안전·인구/수요는 전용 조회 미구현입니다. 데이터가 없다는 사실을 위험 없음으로 해석하지 않습니다.',
+    '침수·국가유산·지하안전은 전용 조회 미구현입니다. 데이터가 없다는 사실을 위험 없음으로 해석하지 않습니다.',
+    demandData
+      ? `생활권 수요는 ${demandData.referenceYear}년 ${demandData.administrativeDongName} 행정동 집계입니다. 반경 500m·1km 수요로 해석하지 않습니다.`
+      : '생활권 수요(SGIS) 조회에 실패했습니다. 데이터가 없다는 사실을 수요 없음으로 해석하지 않습니다.',
     '비교 표본은 최근 12개월 동일 법정동·지목·용도지역 토지 거래입니다. 해안 접근성·면적·도로 조건에 따른 보정은 미적용입니다.',
     trendPercent == null
       ? '12개월 가격 추세는 동일 조건의 시계열 표본이 부족해 제공하지 않습니다.'
