@@ -795,6 +795,13 @@ export function ReportPreview() {
               fact={data.demand.businessesAdministrativeArea as Fact<unknown>}
               description="기준 행정동 집계"
             />
+            <MarketMetric
+              label="반경 500m 업소"
+              value={data.demand.nearbyBusinesses500m.value}
+              unit="개"
+              fact={data.demand.nearbyBusinesses500m as Fact<unknown>}
+              description="상가업소 반경 조회"
+            />
           </div>
           <p className="mt-4 text-[11px] text-slate-500 print:text-slate-600">
             이 수치는 대상 필지 반경 500m·1km 수요가 아닌 행정동 단위 센서스입니다.

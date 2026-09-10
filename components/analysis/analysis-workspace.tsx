@@ -1225,6 +1225,14 @@ export function AnalysisWorkspace() {
                         : '미연결'
                     }
                   />
+                  <SummaryRow
+                    label="반경 500m 업소"
+                    value={
+                      result.data.demand.nearbyBusinesses500m.value != null
+                        ? `${result.data.demand.nearbyBusinesses500m.value.toLocaleString('ko-KR')}개`
+                        : '미연결'
+                    }
+                  />
                   <p className="border-t border-white/8 pt-3 text-[10px] leading-4 text-slate-500">
                     행정동 센서스 기준이며 필지 반경 수요가 아닙니다.
                   </p>

@@ -56,6 +56,7 @@ export type DemandProfile = {
   populationAdministrativeArea: Fact<number>;
   householdsAdministrativeArea: Fact<number>;
   businessesAdministrativeArea: Fact<number>;
+  nearbyBusinesses500m: Fact<number>;
   administrativeArea: Fact<string>;
   transitStops500m: Fact<number>;
 };

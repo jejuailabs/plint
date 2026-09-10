@@ -38,6 +38,8 @@ import { createSgisDemandConnector } from '@/lib/external-apis/connectors/sgis-d
 import type { SgisDemandOutput } from '@/lib/external-apis/connectors/sgis-demand';
 import { createBuildingPermitConnector } from '@/lib/external-apis/connectors/building-permit';
 import type { BuildingPermitOutput } from '@/lib/external-apis/connectors/building-permit';
+import { createSmallBusinessCommerceConnector } from '@/lib/external-apis/connectors/small-business-commerce';
+import type { CommerceOutput } from '@/lib/external-apis/connectors/small-business-commerce';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,6 +57,7 @@ export type LiveSourceData = {
   landCharacteristics: ConnectorResult<LandCharacteristicsOutput>;
   demand: ConnectorResult<SgisDemandOutput>;
   permits: ConnectorResult<BuildingPermitOutput>;
+  commerce: ConnectorResult<CommerceOutput>;
   pnuCode: string | null;
   adminCode: string | null;
   warnings: string[];
@@ -165,6 +168,7 @@ export async function fetchLiveSourceData(
       landCharacteristics: emptyResult<LandCharacteristicsOutput>(skip),
       demand: emptyResult<SgisDemandOutput>(skip),
       permits: emptyResult<BuildingPermitOutput>(skip),
+      commerce: emptyResult<CommerceOutput>(skip),
       pnuCode: null,
       adminCode: null,
       warnings: [
@@ -204,10 +208,10 @@ export async function fetchLiveSourceData(
   const lon0 = juso.data.longitude;
   signal?.throwIfAborted();
   start('building', 2);
-  start('market', 2 + txMonths.length);
+  start('market', 3 + txMonths.length);
   start('planning', 4);
   start('weather', 1);
-  const [bldg, permitsSettled, price, wx, lup, cad, ctxBldg, landChar, demandSettled, ...txSettled] =
+  const [bldg, permitsSettled, price, commerceSettled, wx, lup, cad, ctxBldg, landChar, demandSettled, ...txSettled] =
     await Promise.allSettled([
       track('building', () =>
         createBuildingLedgerConnector().execute(
@@ -224,6 +228,7 @@ export async function fetchLiveSourceData(
       track('market', () =>
         createLandPriceConnector().execute({ pnuCode: pnu }, signal),
       ),
+      track('market', () => lat0 && lon0 ? createSmallBusinessCommerceConnector().execute({ latitude: lat0, longitude: lon0, radiusM: 500 }, signal) : Promise.resolve(emptyResult<CommerceOutput>('좌표 미확인으로 상권 조회 불가'))),
       track('weather', () =>
         createKmaWeatherConnector().execute(
           {
@@ -282,6 +287,7 @@ export async function fetchLiveSourceData(
 
   const building = unwrapSettled(bldg, '건축물대장 조회 실패');
   const permits = unwrapSettled(permitsSettled, '건축 인허가 조회 실패');
+  const commerce = unwrapSettled(commerceSettled, '상권 조회 실패');
   const landPrice = unwrapSettled(price, '공시지가 조회 실패');
   const weather = unwrapSettled(wx, '기상 조회 실패');
   const landUsePlan = unwrapSettled(lup, '토지이용계획 조회 실패');
@@ -327,6 +333,7 @@ export async function fetchLiveSourceData(
   for (const r of [
     building,
     permits,
+    commerce,
     landPrice,
     transactions,
     weather,
@@ -363,6 +370,7 @@ export async function fetchLiveSourceData(
     juso,
     building,
     permits,
+    commerce,
     landPrice,
     transactions,
     weather,

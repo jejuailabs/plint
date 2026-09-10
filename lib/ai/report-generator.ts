@@ -69,6 +69,7 @@ ${existing.length > 0 ? existing.map((b) => `- 용도: ${b.use.value ?? '미확�
 - 인구: ${demand.populationAdministrativeArea.value != null ? `${demand.populationAdministrativeArea.value.toLocaleString('ko-KR')}명` : '미연결'}
 - 가구: ${demand.householdsAdministrativeArea.value != null ? `${demand.householdsAdministrativeArea.value.toLocaleString('ko-KR')}가구` : '미연결'}
 - 사업체: ${demand.businessesAdministrativeArea.value != null ? `${demand.businessesAdministrativeArea.value.toLocaleString('ko-KR')}개` : '미연결'}
+- 반경 500m 상가업소: ${demand.nearbyBusinesses500m.value != null ? `${demand.nearbyBusinesses500m.value.toLocaleString('ko-KR')}개` : '미연결'}
 - 주의: 이 수치는 행정동 센서스 집계이며 대상 필지 반경 수요가 아닙니다.
 
 ## 기후

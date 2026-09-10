@@ -236,6 +236,7 @@ async function runMockPreview(
       businessesAdministrativeArea: fact(1_842, [], {
         warnings: ['상권 API 연결 전 미리보기 값입니다.'],
       }),
+      nearbyBusinesses500m: fact(312, [], { warnings: ['상권 API 연결 전 미리보기 값입니다.'] }),
       administrativeArea: fact('예시 행정동', [], {
         warnings: ['SGIS 운영 키 연결 전 미리보기 값입니다.'],
       }),
@@ -401,6 +402,7 @@ async function runLivePreview(
   const charData = src.landCharacteristics.data;
   const demandData = src.demand.data;
   const permitData = src.permits.data;
+  const commerceData = src.commerce.data;
 
   // Evidence shorthand — returns [] when the connector produced no data.
   const ev = (
@@ -717,6 +719,11 @@ async function runLivePreview(
           : [],
         { warnings: src.demand.warnings },
       ),
+      nearbyBusinesses500m: fact(
+        commerceData?.count ?? null,
+        commerceData ? ev('small-business-commerce', src.commerce, 'verified') : [],
+        { warnings: src.commerce.warnings },
+      ),
       administrativeArea: fact(
         demandData?.administrativeDongName ?? null,
         demandData?.administrativeDongName
@@ -848,6 +855,7 @@ async function runLivePreview(
     ['weather', 'ASOS 기상', src.weather],
     ['demand', 'SGIS 생활권 통계', src.demand],
     ['permits', '건축 인허가 이력', src.permits],
+    ['commerce', '반경 상권', src.commerce],
   ] as const;
   const sourceStatus: NonNullable<ParcelIntelligence['sourceStatus']> =
     sources.map(([id, label, r]) => ({
