@@ -400,6 +400,7 @@ async function runLivePreview(
   const ctxData = src.contextBuildings.data;
   const charData = src.landCharacteristics.data;
   const demandData = src.demand.data;
+  const permitData = src.permits.data;
 
   // Evidence shorthand — returns [] when the connector produced no data.
   const ev = (
@@ -761,6 +762,23 @@ async function runLivePreview(
     // -- risks (dedicated connectors not connected) --------------------------
     risks: [
       {
+        code: 'PERMIT_HISTORY',
+        label: '대상지 건축 인허가 이력',
+        level: permitData == null ? 'unknown' : 'low',
+        finding: permitData == null
+          ? fact<string>(null, [], { warnings: src.permits.warnings })
+          : fact(
+              permitData.length > 0
+                ? `건축 인허가·사용승인 기록 ${permitData.length}건 조회`
+                : '대상 필지의 건축 인허가·사용승인 기록 0건',
+              ev('building-permit', src.permits, 'verified'),
+              { warnings: permitData.length === 0 ? ['미존재 여부는 최신 인허가 원부와 현장 상태를 함께 확인하세요.'] : [] },
+            ),
+        nextAction: permitData?.length
+          ? '기록별 허가·착공·사용승인 일자와 철거·변경 이력을 원부로 확인'
+          : '신규 개발 전 대상지 및 인접 필지의 최신 인허가·철거 이력 확인',
+      },
+      {
         code: 'FLOOD',
         label: '도시침수',
         level: 'unknown',
@@ -829,6 +847,7 @@ async function runLivePreview(
     ['transactions', '토지 실거래', src.transactions],
     ['weather', 'ASOS 기상', src.weather],
     ['demand', 'SGIS 생활권 통계', src.demand],
+    ['permits', '건축 인허가 이력', src.permits],
   ] as const;
   const sourceStatus: NonNullable<ParcelIntelligence['sourceStatus']> =
     sources.map(([id, label, r]) => ({

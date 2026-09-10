@@ -12,6 +12,7 @@ const calls = vi.hoisted(() => ({
   context: vi.fn(),
   characteristics: vi.fn(),
   demand: vi.fn(),
+  permits: vi.fn(),
 }));
 vi.mock('@/lib/external-apis/connectors/juso-address', () => ({
   createJusoAddressConnector: () => ({ execute: calls.address }),
@@ -44,6 +45,9 @@ vi.mock('@/lib/external-apis/connectors/land-characteristics', () => ({
 }));
 vi.mock('@/lib/external-apis/connectors/sgis-demand', () => ({
   createSgisDemandConnector: () => ({ execute: calls.demand }),
+}));
+vi.mock('@/lib/external-apis/connectors/building-permit', () => ({
+  createBuildingPermitConnector: () => ({ execute: calls.permits }),
 }));
 
 import { fetchLiveSourceData } from '@/lib/pipeline/live-source';

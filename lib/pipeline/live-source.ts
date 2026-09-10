@@ -36,6 +36,8 @@ import { createLandCharacteristicsConnector } from '@/lib/external-apis/connecto
 import type { LandCharacteristicsOutput } from '@/lib/external-apis/connectors/land-characteristics';
 import { createSgisDemandConnector } from '@/lib/external-apis/connectors/sgis-demand';
 import type { SgisDemandOutput } from '@/lib/external-apis/connectors/sgis-demand';
+import { createBuildingPermitConnector } from '@/lib/external-apis/connectors/building-permit';
+import type { BuildingPermitOutput } from '@/lib/external-apis/connectors/building-permit';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,6 +54,7 @@ export type LiveSourceData = {
   contextBuildings: ConnectorResult<ContextBuildingsOutput>;
   landCharacteristics: ConnectorResult<LandCharacteristicsOutput>;
   demand: ConnectorResult<SgisDemandOutput>;
+  permits: ConnectorResult<BuildingPermitOutput>;
   pnuCode: string | null;
   adminCode: string | null;
   warnings: string[];
@@ -161,6 +164,7 @@ export async function fetchLiveSourceData(
       contextBuildings: emptyResult<ContextBuildingsOutput>(skip),
       landCharacteristics: emptyResult<LandCharacteristicsOutput>(skip),
       demand: emptyResult<SgisDemandOutput>(skip),
+      permits: emptyResult<BuildingPermitOutput>(skip),
       pnuCode: null,
       adminCode: null,
       warnings: [
@@ -199,14 +203,20 @@ export async function fetchLiveSourceData(
   const lat0 = juso.data.latitude;
   const lon0 = juso.data.longitude;
   signal?.throwIfAborted();
-  start('building', 1);
+  start('building', 2);
   start('market', 2 + txMonths.length);
   start('planning', 4);
   start('weather', 1);
-  const [bldg, price, wx, lup, cad, ctxBldg, landChar, demandSettled, ...txSettled] =
+  const [bldg, permitsSettled, price, wx, lup, cad, ctxBldg, landChar, demandSettled, ...txSettled] =
     await Promise.allSettled([
       track('building', () =>
         createBuildingLedgerConnector().execute(
+          { sigunguCode, bjdongCode, bun, ji },
+          signal,
+        ),
+      ),
+      track('building', () =>
+        createBuildingPermitConnector().execute(
           { sigunguCode, bjdongCode, bun, ji },
           signal,
         ),
@@ -271,6 +281,7 @@ export async function fetchLiveSourceData(
     ]);
 
   const building = unwrapSettled(bldg, '건축물대장 조회 실패');
+  const permits = unwrapSettled(permitsSettled, '건축 인허가 조회 실패');
   const landPrice = unwrapSettled(price, '공시지가 조회 실패');
   const weather = unwrapSettled(wx, '기상 조회 실패');
   const landUsePlan = unwrapSettled(lup, '토지이용계획 조회 실패');
@@ -315,6 +326,7 @@ export async function fetchLiveSourceData(
 
   for (const r of [
     building,
+    permits,
     landPrice,
     transactions,
     weather,
@@ -350,6 +362,7 @@ export async function fetchLiveSourceData(
   return {
     juso,
     building,
+    permits,
     landPrice,
     transactions,
     weather,
