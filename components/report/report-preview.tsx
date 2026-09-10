@@ -1028,6 +1028,20 @@ export function ReportPreview() {
 
         {aiStatus === 'ready' && aiReport && (
           <div className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ['자료 커버리지', `${data.coverage.percent}%`, `${data.coverage.verifiedFacts}개 검증`],
+                ['시장 표본', `${data.market.comparableCount.value ?? 0}건`, data.market.trendPercent.value != null ? `12개월 ${data.market.trendPercent.value > 0 ? '+' : ''}${data.market.trendPercent.value}%` : '추세 표본 부족'],
+                ['생활권 수요', `${data.demand.nearbyBusinesses500m.value ?? '—'}개`, '반경 500m 업소'],
+                ['미확인 리스크', `${data.risks.filter((risk) => risk.level === 'unknown').length}개`, '침수·유산·지하안전'],
+              ].map(([label, value, description]) => (
+                <div key={label} className="rounded-2xl border border-white/[0.06] bg-[#0b1828] p-4 print:border-slate-200 print:bg-white">
+                  <p className="text-[10px] tracking-[0.16em] text-slate-500">{label}</p>
+                  <p className="mt-2 text-xl font-semibold text-white print:text-slate-900">{value}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">{description}</p>
+                </div>
+              ))}
+            </div>
             {/* Executive Summary */}
             <div className="rounded-2xl border border-lime-400/15 bg-gradient-to-br from-lime-400/[0.04] to-transparent p-6 sm:p-8 print:border-lime-600/20 print:from-lime-50">
               <div className="flex items-start gap-3">

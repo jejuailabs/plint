@@ -136,13 +136,8 @@ export async function generateAIReport(
 ): Promise<AIReport> {
   // Without verified prerequisites, a grounded assessment is safer than invented legal/market conclusions.
   const zoning = data.planning.filter((p) => p.category === 'zoning');
-  if (
-    !data.geometry.boundary.value ||
-    !data.identity.center.value ||
-    zoning.length !== 1 ||
-    zoning[0].status !== 'confirmed' ||
-    !data.market.comparableMedianPerSqm.value
-  ) {
+  const apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
     const unavailable =
       data.sourceStatus
         ?.filter((s) => s.status === 'unavailable')
@@ -191,9 +186,6 @@ export async function generateAIReport(
       outputTokens: 0,
     };
   }
-  const apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('CLAUDE_API_KEY is not configured');
-
   const client = new Anthropic({ apiKey });
   const prompt = buildPrompt(data);
 
