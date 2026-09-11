@@ -32,6 +32,7 @@ import type {
   AnalysisPreviewResponse,
   DevelopmentScenario,
 } from '@/lib/domain/parcel-intelligence';
+import { normalizeStoredAnalysis } from '@/lib/domain/normalize-stored-analysis';
 import type { Fact } from '@/lib/domain/evidence';
 
 /* ------------------------------------------------------------------ */
@@ -255,14 +256,15 @@ export function ReportPreview() {
           const cached =
             !reportId &&
             JSON.parse(sessionStorage.getItem('plint-report-input') ?? 'null');
+          const normalizedCached = normalizeStoredAnalysis(cached?.data);
           if (
-            cached?.data?.pipelineVersion === 2 &&
+            normalizedCached &&
             [
-              cached.data.identity.jibunAddress.value,
-              cached.data.identity.roadAddress.value,
+              normalizedCached.identity.jibunAddress.value,
+              normalizedCached.identity.roadAddress.value,
             ].includes(nextAddress)
           ) {
-            payload = cached;
+            payload = { ...cached, data: normalizedCached };
             setSelectedId(cached.selectedScenarioId ?? 'balanced');
           }
         } catch {
@@ -273,12 +275,10 @@ export function ReportPreview() {
             `/api/analysis/lookup?address=${encodeURIComponent(nextAddress)}${reportId ? '&reportId=' + encodeURIComponent(reportId) : ''}`,
           );
           const body = saved.ok ? await saved.json() : null;
-          if (
-            body?.data?.result &&
-            (reportId || body.data.result.pipelineVersion === 2)
-          )
+          const normalizedResult = normalizeStoredAnalysis(body?.data?.result);
+          if (normalizedResult)
             payload = {
-              data: body.data.result,
+              data: normalizedResult,
               meta: {
                 requestId: body.data.analysisId,
                 generatedAt: body.data.completedAt,

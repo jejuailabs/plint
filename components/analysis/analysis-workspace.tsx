@@ -53,6 +53,7 @@ import type {
   AnalysisPreviewResponse,
   DevelopmentScenario,
 } from '@/lib/domain/parcel-intelligence';
+import { normalizeStoredAnalysis } from '@/lib/domain/normalize-stored-analysis';
 
 const LazyBlenderModelViewer = dynamic(
   () =>
@@ -205,9 +206,10 @@ export function AnalysisWorkspace() {
             const lookupBody = await lookupRes.json();
             if (signal.aborted) return;
             const saved = lookupBody?.data;
-            if (saved?.result?.pipelineVersion === 2) {
+            const normalizedResult = normalizeStoredAnalysis(saved?.result);
+            if (normalizedResult) {
               const restored: AnalysisPreviewResponse = {
-                data: saved.result as AnalysisPreviewResponse['data'],
+                data: normalizedResult,
                 meta: {
                   requestId: saved.analysisId,
                   generatedAt: saved.completedAt ?? new Date().toISOString(),
@@ -240,13 +242,8 @@ export function AnalysisWorkspace() {
               }
               return;
             }
-            if (saved?.result) {
-              setStatus('error');
-              setMessage(
-                '저장된 분석 형식이 현재 화면과 달라 바로 표시할 수 없습니다. 재분석을 선택하면 새 결과로 갱신합니다.',
-              );
-              return;
-            }
+            // A corrupt or incomplete saved response is ignored here. The
+            // normal preview route below can still rebuild a usable analysis.
           }
         } catch {
           /* lookup failed, proceed with fresh analysis */
